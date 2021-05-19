@@ -67,7 +67,6 @@ class PwnShell:
     ##########################  CHECK IF IP & PORT IS VALID ############################
 
     def is_valid(self):  # Checking if the ip address is valid
-        print(self.port)
         try:
             ipaddress.ip_address(self.ip)
             if self.port <= 65535 :
