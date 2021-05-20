@@ -71,3 +71,10 @@ def request(file_name , https = False , proxies = None):
 	elif method_name.lower() == "post":
 		response = requests.post(url = url , headers = headers , data = post_data , proxies = proxies , verify = False)
 	return response
+def get_method_path(file_name):
+    file_object = open(file_name , "r")
+    request_line = file_object.readline()
+    file_object.close()
+    request_line = request_line.split(" ")
+    method_path = request_line[1]
+    return method_path
