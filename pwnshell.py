@@ -43,10 +43,11 @@ class PwnShell:
         ######################################################################
 
     def info(self):
-        print('[*]LOCAL IP ADDRESS : %s' % self.ip)
-        print('[*]LOCAL PORT : %s' % self.port)
-        if self.domain:
-            print('[*]TARGET URL : %s' % self.domain)
+        info = {'[*]LOCAL IP ADDRESS': self.ip, '[*]LOCAL PORT': self.port, '[*]Domain':self.domain, '[*]Method':self.method, '[*]Post Data':self.data,
+                '[*]Payload Type':self.type, '[*]Request file':self.file, '[*]Use nodejs payloads':self.nodejs}
+        for key, value in info.items():
+            if value:
+                print(f'{key} : {value}')
 
     ####################################################################################
     ###################################  LINUX #########################################
@@ -185,7 +186,7 @@ class PwnShell:
             else:
                 url = url.replace("PWNME", encoded_payload)
                 print(url)
-                req = requests.get(url, headers=request,verify=False)
+                req = requests.get(url, headers=request, verify=False)
                 print(req.status_code)
             time.sleep(2)
 
