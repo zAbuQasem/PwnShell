@@ -29,11 +29,6 @@ class PwnShell:
         self.authentication = args.auth
         self.type = args.type
         self.file = args.file
-
-        if self.ip_address:
-            print(self.ip_address)
-        else:
-            print("PLEASE SPECIFY AN IP ADDRESS")
         ########################################################################
         ###################### Specifying OS ###################################
         if self.type == "linux" or self.type == "l":
