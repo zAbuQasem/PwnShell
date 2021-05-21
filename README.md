@@ -40,7 +40,7 @@ PwnShell is a python script that automate the remote code execution process
 
 <!-- USAGE EXAMPLES -->
 ## Usage
-###Recommended method 👇
+### Recommended method 👇
 ```sh
    ./pwnshell.py -H [HOST IP] -f [REQUEST FILE]
    ```
@@ -49,12 +49,12 @@ PwnShell is a python script that automate the remote code execution process
 ```sh
    ./pwnshell.py -H [HOST IP] -u [TARGET URL] -m [REQUEST METHOD] -c [COOKIE (optional)] -k [HEADERS (optional)]
    ```
-#### Note: Cookie and headers must be in JSON format (if provided).
+##### Note: Cookie and headers must be in JSON format (if provided).
 ### For NodeJs Payloads
 ```shell
   ./pwnshell.py -H [HOST IP] -n   
 ```
-##### To use only NodeJs payload -> require('child_process').exec('PWNME')
+###### To use only NodeJs payload -> require('child_process').exec('PWNME')
 ### Use Help for full usage details
 ```sh
    ./pwnshell.py -h
