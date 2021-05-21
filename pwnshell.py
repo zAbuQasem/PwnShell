@@ -43,11 +43,10 @@ class PwnShell:
         ######################################################################
 
     def info(self):
-        print('[*]LOCAL IP ADDRESS : %s' % self.ip)
-        print('[*]LOCAL PORT : %s' % self.port)
-        if self.domain:
-            print('[*]TARGET URL : %s' % self.domain)
-
+        info = {'[*]LOCAL IP ADDRESS': self.ip, '[*]LOCAL PORT': self.port,'[*]TARGET URL': self.domain, '[*]Method':self.method, '[*]Post Data':self.data,'[*]Payload Type':self.type, '[*]Request file':self.file, '[*]Use nodejs payloads':self.nodejs}
+        for key, value in info.items():
+            if value:
+                print(f'{key} : {value}')
     ####################################################################################
     ###################################  LINUX #########################################
 
