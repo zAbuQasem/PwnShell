@@ -224,7 +224,9 @@ if __name__ == '__main__':
               / __/  / /_/ / | /| / / __ \\__ \/ __ \ / _ \/ / /  / __/
              (_  )  / ____/| |/ |/ / / / /__/ / / / /  __/ / /  (_  ) 
             /  _/  /_/     |__/|__/_/ /_/____/_/ /_/\\___/_/_/  /  _/  
-            /_/                                                /_/    
+            /_/                                                /_/   V 1.0
+                Authors: AbuQasem & AlBalouli
+            ##############################################################  
             '''
         print(banner)
         parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
