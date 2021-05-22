@@ -2,10 +2,8 @@
 
 # PwnShell
 
-PwnShell is a python script that automate the remote code execution process
-
-![Product Name Screen Shot][product-screenshot]
-
+**PwnShell** is a powerfull RCE exploitation Automator and a Session handler tool designed for Security Researchers and CTF players.
+![Alt text](https://github.com/zAbuQasem/PwnShell/blob/main/Screenshots/PwnShell.png)
 
 <details open="open">
   <summary>Table of Contents</summary>
@@ -40,11 +38,12 @@ PwnShell is a python script that automate the remote code execution process
 
 <!-- USAGE EXAMPLES -->
 ## Usage
-### Recommended method 👇
+### Recommended Method 👇
 ```sh
    ./pwnshell.py -H [HOST IP] -f [REQUEST FILE]
 ```
 #### Request File Example:
+###### Put 'PWNME' in the vulnerable place.
 ```sh
 GET /Vulnerable.php?cmd=PWNME HTTP/1.1
 Host: 127.0.0.1
@@ -57,22 +56,31 @@ Connection: close
 Upgrade-Insecure-Requests: 1
 ```
 ### OR
-
-```sh
-   ./pwnshell.py -H [HOST IP] -u [TARGET URL] -m [REQUEST METHOD] -c [COOKIE (optional)] -k [HEADERS (optional)]
-   ```
 ##### Note: Cookie and headers must be in JSON format (if provided).
-### For NodeJs Payloads
-```shell
-  ./pwnshell.py -H [HOST IP] -n   
-```
+```sh
+./pwnshell.py -H [HOST-IP] -u [TARGET-URL] -m [REQUEST-METHOD] -c [COOKIE (optional)] -k [HEADERS (optional)]
+   ```
+   ```sh
+   ./pwnshell.py -H <HOST-IP> -u http/s://<TARGET>/Vulnerable.php?cmd=PWNME -m get 
+   ```
+
+### For NodeJs Payloads 
 ###### To use only NodeJs payload -> require('child_process').exec('PWNME')
+```shell
+  ./pwnshell.py -H [HOST-IP] -n   
+```
+
 ### Use Help for full usage details
 ```sh
    ./pwnshell.py -h
    ```
 
 # Preview
+## Using [Request File]
+![Alt text](https://github.com/zAbuQasem/PwnShell/blob/main/Screenshots/req.gif)
+
+## Using [URL]
+![Alt text](https://github.com/zAbuQasem/PwnShell/blob/main/Screenshots/url.gif)
    
 
 
@@ -85,11 +93,11 @@ Distributed under the MIT License. See `LICENSE` for more information.
 <!-- CONTACT -->
 ## Contact
 
-Zeyad AbuQasem - [LinkedIn](https://www.linkedin.com/in/zeyad-yahya-0985971b5/)
+**Zeyad AbuQasem** - [LinkedIn](https://www.linkedin.com/in/zeyad-yahya-0985971b5/)
 
-Omar Albalouli - [LinkedIn](https://www.linkedin.com/in/omar-albalouli/)
+**Omar Albalouli** - [LinkedIn](https://www.linkedin.com/in/omar-albalouli/)
 
-Project Link: [https://github.com/zAbuQasem/PwnShell](https://github.com/zAbuQasem/PwnShell)
+**Project Link**: [https://github.com/zAbuQasem/PwnShell](https://github.com/zAbuQasem/PwnShell)
 
 
 
