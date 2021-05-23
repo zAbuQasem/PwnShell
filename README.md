@@ -77,10 +77,10 @@ Upgrade-Insecure-Requests: 1
 
 # Preview
 ## Using [Request File]
-![Alt text](https://github.com/zAbuQasem/PwnShell/blob/main/Screenshots/req.gif)
+![Alt text](https://github.com/zAbuQasem/PwnShell/blob/main/Screenshots/requestfile-demo.gif)
 
 ## Using [URL]
-![Alt text](https://github.com/zAbuQasem/PwnShell/blob/main/Screenshots/url.gif)
+![Alt text](https://github.com/zAbuQasem/PwnShell/blob/main/Screenshots/url-demo.gif)
    
 
 
