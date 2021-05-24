@@ -349,7 +349,7 @@ if __name__ == '__main__':
         parser.add_argument("-n", "--nodejs", help='Use Nodejs Payloads', action='store_true')
         parser.add_argument("-f", "--file", help='Request file')
         parser.add_argument("-t", "--type", help='Choose OS [windows/linux]', type=str, default='linux')
-        parser.add_argument("-u", "--url", help='Target url [http://localhost:8888/h.php?meow=PWNME]')
+        parser.add_argument("-u", "--url", help='Target url [http://localhost:8888/Vulnerable.php?meow=PWNME]')
         parser.add_argument("-d", "--data", help='Post data')
         parser.add_argument("-P", "--payload", help='Payload type [encoded/plain]', default='encoded')
         parser.add_argument("-c", "--cookies", help='Enter Cookie')
