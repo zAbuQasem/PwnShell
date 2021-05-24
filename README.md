@@ -9,7 +9,6 @@
 <a href="#getting-started">Installation</a>
     </li>
     <li><a href="#usage">Usage</a></li>
-    <li><a href="#license">License</a></li>
     <li><a href="#contact">Contact</a></li>
     <li><a href="#acknowledgements">Acknowledgements</a></li>
   </ol>
@@ -80,25 +79,13 @@ Upgrade-Insecure-Requests: 1
 
 ### Using [URL Method]
 ![Alt text](https://github.com/zAbuQasem/PwnShell/blob/main/Screenshots/url-demo.gif)
-   
-
-
-## License
-
-Distributed under the MIT License. See `LICENSE` for more information.
-
-
 
 <!-- CONTACT -->
 ## Contact
 
 **Zeyad AbuQasem** - [LinkedIn](https://www.linkedin.com/in/zeyad-abuqasem/)
 
-**Omar Albalouli** - [LinkedIn](https://www.linkedin.com/in/omar-albalouli/)
-
-**Project Link**: [https://github.com/zAbuQasem/PwnShell](https://github.com/zAbuQasem/PwnShell)
-
-
+**Omar Albalouli** - [LinkedIn](https://www.linkedin.com/in/omar-albalouli/) & [Github](https://github.com/omaralbalolly)
 
 <!-- ACKNOWLEDGEMENTS -->
 ## Acknowledgements
