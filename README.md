@@ -23,11 +23,11 @@
    ```
 2. Install the dependencies
    ```sh
+   cd PwnShell/
    pip install -r requirements.txt
    ```
 3. Make the script executable 
    ```sh
-   cd PwnShell/
    chmod +x pwnshell.py
    ```
 
