@@ -6,8 +6,8 @@
 
 ![Alt text](https://github.com/zAbuQasem/PwnShell/blob/main/Screenshots/PwnShell.png)
 
-<a href="#getting-started">Installation</a>
-    </li>
+<a href="#getting-started">
+    <li><a href="#installation">Installation</a></li>
     <li><a href="#usage">Usage</a></li>
     <li><a href="#contact">Contact</a></li>
     <li><a href="#acknowledgements">Acknowledgements</a></li>
