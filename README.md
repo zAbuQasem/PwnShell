@@ -24,7 +24,7 @@
 2. Install the dependencies
    ```sh
    cd PwnShell/
-   pip install -r requirements.txt
+   pip3 install -r requirements.txt
    ```
 3. Make the script executable 
    ```sh
@@ -92,7 +92,7 @@ Distributed under the MIT License. See `LICENSE` for more information.
 <!-- CONTACT -->
 ## Contact
 
-**Zeyad AbuQasem** - [LinkedIn](https://www.linkedin.com/in/zeyad-yahya-0985971b5/)
+**Zeyad AbuQasem** - [LinkedIn](https://www.linkedin.com/in/zeyad-abuqasem/)
 
 **Omar Albalouli** - [LinkedIn](https://www.linkedin.com/in/omar-albalouli/)
 
