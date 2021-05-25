@@ -5,7 +5,7 @@
 ### PwnShell is a Powerfull RevShell Bruteforcer and Connection Handler built For Security Researchers and CTF Players!
 <details>
     <ol>
-    <li><div>Bruteforces the Vulnerable Paramter</div></li>
+    <li><div>Bruteforces the Vulnerable Parameter</div></li>
     <li><div>Recieve and Handle the Connection</div></li>
     <li><div>Downloads Post exploitation scripts from their Repos.</div></li>
     <li><div>Uploads them to target</div></li>
