@@ -90,6 +90,9 @@ Upgrade-Insecure-Requests: 1
 ### Using [URL Method]
 ![Alt text](https://github.com/zAbuQasem/PwnShell/blob/main/Screenshots/url-demo.gif)
 
+### NodeJs Payload:
+![Alt text](https://github.com/zAbuQasem/PwnShell/blob/main/Screenshots/NodeJs-prev.png)
+
 <!-- CONTACT -->
 ## Contact:
 
