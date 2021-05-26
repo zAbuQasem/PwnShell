@@ -111,6 +111,8 @@ Upgrade-Insecure-Requests: 1
 
 ### TODO:
 ```sh
-1- Add support for windows
-2- Add more payloads and options
-3- Add Post exploitation scripts for [linux/windows]
+1- Add support for windows.
+2- Add Msfvenom payloads.
+3- Add Post exploitation scripts for [linux/windows].
+4- Prevent CTRL + C from killing the shell.
+5- Auto log poison to RCE.
