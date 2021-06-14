@@ -198,6 +198,7 @@ class PwnShell:
                 time.sleep(2)
                 if self.is_port_in_use():
                     break
+        exit_gracefully()
 
     def info(self):
         info = {'[*]LOCAL IP': self.ip, '[*]LOCAL PORT': self.port, '[*]TARGET URL ': self.domain,
