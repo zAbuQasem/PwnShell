@@ -4,4 +4,4 @@ idna==2.10
 nclib==1.0.1
 netifaces==0.10.9
 requests==2.25.1
-urllib3==1.26.4
+urllib3>=1.26.5
