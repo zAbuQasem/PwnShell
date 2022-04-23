@@ -151,6 +151,7 @@ class PwnShell:
             self.iteration += 1
             req = request
             self.url = url.replace("PWNME", self.payload)
+            data = post_data.replace("PWNME", self.payload)
             console.print(f'[*] Trying payload [{self.iteration}/{len(payloads)}] : {payload[:30]}...', end='\r',
                           style="white")
             for r in req:
@@ -160,7 +161,7 @@ class PwnShell:
             if method.lower() == "post":
                 if post_data:
                     post_data = post_data.replace("PWNME", self.payload)
-                req = requests.post(self.url, headers=req, data=post_data, verify=False)
+                req = requests.post(self.url, headers=req, data=data, verify=False)
             elif method.lower() == "get":
                 req = requests.get(self.url, headers=req, verify=False, proxies={"http": "http://127.0.0.1:8080"})
         exit(1)
