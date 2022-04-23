@@ -2,7 +2,7 @@
 
 # PwnShell
 
-### PwnShell is a Powerfull RevShell Bruteforcer and Connection Handler built For Security Researchers and CTF Players!
+### PwnShell is a tool that will help you get a reverse shell and upload post-exploitation scripts to target machine instead of wasting your time with this regular ctf stuff... just confirm the injection point and feed it to this dumb tool.
 <details>
     <ol>
     <li><div>Bruteforces the Vulnerable Parameter</div></li>
