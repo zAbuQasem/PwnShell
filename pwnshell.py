@@ -157,7 +157,7 @@ class PwnShell:
                 break
             self.payload = self.get_url_encoded_payload(payload)
             self.iteration += 1
-            req = request_headers
+            req = request_headers.copy()
             self.url = url.replace("PWNME", self.payload)
             data = POST_data.replace("PWNME", self.payload)
             console.print(f'[*] Trying payload [{self.iteration}/{len(payloads)}] : {payload[:30]}...', end='\r',
